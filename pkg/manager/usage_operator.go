@@ -3,6 +3,7 @@ package manager
 import (
 	"context"
 	"time"
+	"fmt"
 
 	"github.com/rancher/csp-rancher-usage-operator/pkg/clients/k8s"
 	"github.com/rancher/csp-rancher-usage-operator/pkg/metrics"
@@ -34,8 +35,22 @@ func (m *UsageOperator) start(ctx context.Context, errs chan<- error) {
 	for range ticker(ctx, managerInterval) {
 		// TODO: calculate nodes here
 		logrus.Info("Calculating managed nodes")
+		ncount, err := m.getNodeCount(ctx)
+                if err != nil {
+                       errs <- err
+                }
+                logrus.Infof("Node Count %d", ncount)
 	}
 	logrus.Infof("[manager] exiting")
+}
+
+func (m *UsageOperator) getNodeCount(ctx context.Context) (int ,error) {
+        nodeCounts, err := m.scraper.ScrapeAndParse()
+        if err != nil {
+                return 0, fmt.Errorf("unable to determine number of active nodes: %v", err)
+        }
+        logrus.Debugf("found %d nodes from rancher metrics", nodeCounts.Total)
+        return nodeCounts.Total, nil
 }
 
 func ticker(ctx context.Context, duration time.Duration) <-chan time.Time {
