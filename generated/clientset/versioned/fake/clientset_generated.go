@@ -18,9 +18,9 @@ limitations under the License.
 package fake
 
 import (
-	clientset "github.com/rancher/csp-rancher-usage-operator/generated/clientset/versioned"
-	cspv1 "github.com/rancher/csp-rancher-usage-operator/generated/clientset/versioned/typed/csp/v1"
-	fakecspv1 "github.com/rancher/csp-rancher-usage-operator/generated/clientset/versioned/typed/csp/v1/fake"
+	clientset "github.com/SUSE-Enceladus/csp-rancher-usage-operator/generated/clientset/versioned"
+	recordv1 "github.com/SUSE-Enceladus/csp-rancher-usage-operator/generated/clientset/versioned/typed/record/v1"
+	fakerecordv1 "github.com/SUSE-Enceladus/csp-rancher-usage-operator/generated/clientset/versioned/typed/record/v1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -78,7 +78,7 @@ var (
 	_ testing.FakeClient  = &Clientset{}
 )
 
-// CspV1 retrieves the CspV1Client
-func (c *Clientset) CspV1() cspv1.CspV1Interface {
-	return &fakecspv1.FakeCspV1{Fake: &c.Fake}
+// RecordV1 retrieves the RecordV1Client
+func (c *Clientset) RecordV1() recordv1.RecordV1Interface {
+	return &fakerecordv1.FakeRecordV1{Fake: &c.Fake}
 }

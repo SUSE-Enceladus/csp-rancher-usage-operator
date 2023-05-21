@@ -21,17 +21,17 @@ function build-image() {
 }
 
 mkdir -p dist/artifacts
-cp bin/csp-adapter dist/artifacts/csp-adapter-linux${SUFFIX}
-for i in bin/csp-adapter-*; do
+cp bin/csp-rancher-usage-operator dist/artifacts/csp-rancher-usage-operator-linux${SUFFIX}
+for i in bin/csp-rancher-usage-operator-*; do
     if [ -e "$i" ]; then
-        if [ "$i" = csp-adapter-windows-amd64 ]; then
-            cp $i dist/artifacts/csp-adapter-windows-amd64.exe
+        if [ "$i" = csp-rancher-usage-operator-windows-amd64 ]; then
+            cp $i dist/artifacts/csp-rancher-usage-operator-windows-amd64.exe
         else
             cp $i dist/artifacts
         fi
     fi
 done
 
-build-image rancher-csp-adapter
+build-image rancher-csp-rancher-usage-operator
 
 ./scripts/package-helm

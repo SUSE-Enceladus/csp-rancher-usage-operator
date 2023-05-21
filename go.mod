@@ -1,4 +1,4 @@
-module github.com/rancher/csp-rancher-usage-operator
+module github.com/SUSE-Enceladus/csp-rancher-usage-operator
 
 go 1.19
 
@@ -44,6 +44,7 @@ require (
 	k8s.io/api v0.26.4
 	k8s.io/apimachinery v0.26.4
 	k8s.io/client-go v12.0.0+incompatible
+	sigs.k8s.io/controller-runtime v0.11.1
 )
 
 require (

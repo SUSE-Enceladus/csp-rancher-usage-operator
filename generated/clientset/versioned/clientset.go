@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"net/http"
 
-	cspv1 "github.com/rancher/csp-rancher-usage-operator/generated/clientset/versioned/typed/csp/v1"
+	recordv1 "github.com/SUSE-Enceladus/csp-rancher-usage-operator/generated/clientset/versioned/typed/record/v1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
@@ -29,18 +29,18 @@ import (
 
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
-	CspV1() cspv1.CspV1Interface
+	RecordV1() recordv1.RecordV1Interface
 }
 
 // Clientset contains the clients for groups.
 type Clientset struct {
 	*discovery.DiscoveryClient
-	cspV1 *cspv1.CspV1Client
+	recordV1 *recordv1.RecordV1Client
 }
 
-// CspV1 retrieves the CspV1Client
-func (c *Clientset) CspV1() cspv1.CspV1Interface {
-	return c.cspV1
+// RecordV1 retrieves the RecordV1Client
+func (c *Clientset) RecordV1() recordv1.RecordV1Interface {
+	return c.recordV1
 }
 
 // Discovery retrieves the DiscoveryClient
@@ -87,7 +87,7 @@ func NewForConfigAndClient(c *rest.Config, httpClient *http.Client) (*Clientset,
 
 	var cs Clientset
 	var err error
-	cs.cspV1, err = cspv1.NewForConfigAndClient(&configShallowCopy, httpClient)
+	cs.recordV1, err = recordv1.NewForConfigAndClient(&configShallowCopy, httpClient)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +112,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 // New creates a new Clientset for the given RESTClient.
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
-	cs.cspV1 = cspv1.New(c)
+	cs.recordV1 = recordv1.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)
 	return &cs

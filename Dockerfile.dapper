@@ -11,10 +11,10 @@ RUN if [ "${ARCH}" == "amd64" ]; then \
 RUN curl -sL https://get.helm.sh/helm-v3.5.4-linux-${ARCH}.tar.gz | tar xvzf - -C /usr/local/bin --strip-components=1
 
 ENV DAPPER_ENV REPO TAG DRONE_TAG CROSS
-ENV DAPPER_SOURCE /go/src/github.com/rancher/csp-adapter/
+ENV DAPPER_SOURCE /go/src/github.com/SUSE-Enceladus/csp-rancher-usage-operator/
 ENV DAPPER_OUTPUT ./bin ./dist
 ENV DAPPER_DOCKER_SOCKET true
-ENV DAPPER_RUN_ARGS "-v csp-adapter-pkg:/go/pkg -v csp-adapter-cache:/root/.cache"
+ENV DAPPER_RUN_ARGS "-v csp-usage-operator-pkg:/go/pkg -v csp-usage-operator-cache:/root/.cache"
 WORKDIR ${DAPPER_SOURCE}
 
 ENTRYPOINT ["./scripts/entry"]

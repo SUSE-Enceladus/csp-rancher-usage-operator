@@ -18,7 +18,7 @@ limitations under the License.
 package fake
 
 import (
-	cspv1 "github.com/rancher/csp-rancher-usage-operator/api/csp/v1"
+	recordv1 "github.com/SUSE-Enceladus/csp-rancher-usage-operator/api/record/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -30,7 +30,7 @@ var scheme = runtime.NewScheme()
 var codecs = serializer.NewCodecFactory(scheme)
 
 var localSchemeBuilder = runtime.SchemeBuilder{
-	cspv1.AddToScheme,
+	recordv1.AddToScheme,
 }
 
 // AddToScheme adds all types of this clientset into the given scheme. This allows composition

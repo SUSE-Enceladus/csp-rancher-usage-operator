@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/rancher/csp-rancher-usage-operator/pkg/clients/k8s"
-	"github.com/rancher/csp-rancher-usage-operator/pkg/manager"
-	"github.com/rancher/csp-rancher-usage-operator/pkg/metrics"
+	rancherusage "github.com/SUSE-Enceladus/csp-rancher-usage-operator/generated/clientset/versioned"
+	"github.com/SUSE-Enceladus/csp-rancher-usage-operator/pkg/clients/k8s"
+	"github.com/SUSE-Enceladus/csp-rancher-usage-operator/pkg/manager"
+	"github.com/SUSE-Enceladus/csp-rancher-usage-operator/pkg/metrics"
 	"github.com/rancher/wrangler/pkg/k8scheck"
 	"github.com/rancher/wrangler/pkg/ratelimit"
 	"github.com/rancher/wrangler/pkg/signals"
@@ -52,12 +53,14 @@ func run() error {
 		return err
 	}
 
+	rancherusageClient := rancherusage.NewForConfigOrDie(cfg)
+
 	hostname, err := k8sClients.GetRancherHostname()
 	if err != nil {
 		return fmt.Errorf("failed to start, unable to get hostname: %v", err)
 	}
 
-	m := manager.NewUsageOperator(k8sClients, metrics.NewScraper(hostname, cfg))
+	m := manager.NewUsageOperator(k8sClients, rancherusageClient, metrics.NewScraper(hostname, cfg))
 
 	errs := make(chan error, 1)
 	m.Start(ctx, errs)

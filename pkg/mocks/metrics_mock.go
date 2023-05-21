@@ -1,7 +1,7 @@
 package mocks
 
 import (
-	"github.com/rancher/csp-rancher-usage-operator/pkg/metrics"
+	"github.com/SUSE-Enceladus/csp-rancher-usage-operator/pkg/metrics"
 )
 
 type MockScraper struct {
