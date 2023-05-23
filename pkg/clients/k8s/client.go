@@ -31,6 +31,7 @@ const (
 	versionSettingEnv   = "K8S_RANCHER_VERSION_SETTING"
 	cspConfigKey        = "data"
 	cspComponentName    = "csp-usage-operator"
+	baseProductPrefix   = "cpe:/o:suse:rancher:"
 )
 
 var (
@@ -235,7 +236,7 @@ func (c *Clients) UpdateProductUsage(managedNodes uint32) error {
                                 Name: "rancher-usage-record",
                         },
 			// TODO(gyee): check with PM about base product. Use "Rancher ${VERISON}" for now
-			BaseProduct: "Rancher " + rancherVersion,
+			BaseProduct: baseProductPrefix + rancherVersion,
 			ManagedNodeCount: managedNodes,
 			ReportingTime: reportingTime,
                 }, metav1.CreateOptions{})
