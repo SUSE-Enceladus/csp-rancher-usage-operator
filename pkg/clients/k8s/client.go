@@ -6,11 +6,15 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/rancher/lasso/pkg/controller"
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	"github.com/rancher/wrangler/pkg/clients"
 	v1 "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
+	rancherusagerecordv1 "github.com/SUSE-Enceladus/csp-rancher-usage-operator/api/record/v1"
+	rancherusage "github.com/SUSE-Enceladus/csp-rancher-usage-operator/generated/clientset/versioned"
+	rancherusagev1 "github.com/SUSE-Enceladus/csp-rancher-usage-operator/generated/clientset/versioned/typed/record/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierror "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -51,9 +55,12 @@ type Client interface {
 	GetRancherHostname() (string, error)
 	// GetRancherVersion finds the version of rancher from the settings
 	GetRancherVersion() (string, error)
+	// UpdateProductUsage updates the RancherUsageRecord with the current managed node count
+	UpdateProductUsage(managedNodes uint32) error
 }
 
 type Clients struct {
+	ProductUsage  rancherusagev1.RancherUsageRecordInterface
 	ConfigMaps    v1.ConfigMapClient
 	Secrets       v1.SecretController
 	Notifications controller.SharedController
@@ -69,6 +76,11 @@ func New(ctx context.Context, rest *rest.Config) (*Clients, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	rancherUsageClient, err := rancherusage.NewForConfig(rest)
+	if err != nil {
+                return nil, err
+        }
 
 	if err := clients.Start(ctx); err != nil {
 		return nil, err
@@ -103,6 +115,7 @@ func New(ctx context.Context, rest *rest.Config) (*Clients, error) {
 	}
 
 	return &Clients{
+		ProductUsage:  rancherUsageClient.RecordV1().RancherUsageRecords(),
 		ConfigMaps:    clients.Core.ConfigMap(),
 		Secrets:       clients.Core.Secret(),
 		Notifications: notificationController,
@@ -242,4 +255,30 @@ func (c *Clients) GetRancherVersion() (string, error) {
 		return "", err
 	}
 	return setting.Value, nil
+}
+
+func (c *Clients) UpdateProductUsage(managedNodes uint32) error {
+        currentUsage, err := c.ProductUsage.Get(context.TODO(), "rancher-usage-record", metav1.GetOptions{})
+	reportingTime := time.Now().Format(time.RFC3339Nano)
+        if apierror.IsNotFound(err) {
+		rancherVersion, err := c.GetRancherVersion()
+		if err != nil {
+                	return err
+        	}
+                _, err = c.ProductUsage.Create(context.TODO(), &rancherusagerecordv1.RancherUsageRecord{
+                        ObjectMeta: metav1.ObjectMeta{
+                                Name: "rancher-usage-record",
+                        },
+			// TODO(gyee): check with PM about base product. Use "Rancher ${VERISON}" for now
+			BaseProduct: "Rancher " + rancherVersion,
+			ManagedNodeCount: managedNodes,
+			ReportingTime: reportingTime,
+                }, metav1.CreateOptions{})
+                return err
+        }
+        currentUsage = currentUsage.DeepCopy()
+        currentUsage.ManagedNodeCount = managedNodes
+	currentUsage.ReportingTime = reportingTime
+        _, err = c.ProductUsage.Update(context.TODO(), currentUsage, metav1.UpdateOptions{})
+        return err
 }
