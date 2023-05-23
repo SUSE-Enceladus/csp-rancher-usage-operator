@@ -51,20 +51,14 @@ rules:
   - list
   - watch
 - apiGroups:
-  - record.suse.com
+  - usagerecords.suse.com
   resources:
-  - rancherusagerecords
+  - productusages
   verbs:
   - create
   - get
   - patch
   - update
-- apiGroups:
-  - record.suse.com
-  resources:
-  - rancherusagerecords/status
-  verbs:
-  - get
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding

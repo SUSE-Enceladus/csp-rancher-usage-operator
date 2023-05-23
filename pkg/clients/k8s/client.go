@@ -12,9 +12,9 @@ import (
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	"github.com/rancher/wrangler/pkg/clients"
 	v1 "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
-	rancherusagerecordv1 "github.com/SUSE-Enceladus/csp-rancher-usage-operator/api/record/v1"
-	rancherusage "github.com/SUSE-Enceladus/csp-rancher-usage-operator/generated/clientset/versioned"
-	rancherusagev1 "github.com/SUSE-Enceladus/csp-rancher-usage-operator/generated/clientset/versioned/typed/record/v1"
+	usagerecordsv1 "github.com/SUSE-Enceladus/csp-rancher-usage-operator/api/usagerecords/v1"
+	productusage "github.com/SUSE-Enceladus/csp-rancher-usage-operator/generated/clientset/versioned"
+	productusagev1 "github.com/SUSE-Enceladus/csp-rancher-usage-operator/generated/clientset/versioned/typed/usagerecords/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierror "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -24,29 +24,23 @@ import (
 )
 
 const (
-	cspAdapterNamespace = "cattle-csp-adapter-system"
-	cspAdapterSecret    = "K8S_CACHE_SECRET"
+	cspAdapterNamespace = "cattle-csp-usage-operator-system"
 	cspAdapterConfigMap = "K8S_OUTPUT_CONFIGMAP"
 	cspNotification     = "K8S_OUTPUT_NOTIFICATION"
 	hostnameSettingEnv  = "K8S_HOSTNAME_SETTING"
 	versionSettingEnv   = "K8S_RANCHER_VERSION_SETTING"
 	cspConfigKey        = "data"
-	cspComponentName    = "csp-adapter"
+	cspComponentName    = "csp-usage-operator"
 )
 
 var (
 	outputConfigMapName    string
 	outputNotificationName string
-	cacheName              string
 	hostnameSetting        string
 	versionSetting         string
 )
 
 type Client interface {
-	// GetConsumptionTokenSecret retrieves the secret containing consumption token info from k8s
-	GetConsumptionTokenSecret() (*corev1.Secret, error)
-	// UpdateConsumptionTokenSecret stores data into the secret containing consumption token info
-	UpdateConsumptionTokenSecret(data map[string]string) error
 	// UpdateCSPConfigOutput stores config to k8s as a configmap with a static/constant name
 	UpdateCSPConfigOutput(marshalledData []byte) error
 	// UpdateUserNotification creates/updates a RancherUserNotification based on isInCompliance and the provided message
@@ -60,7 +54,7 @@ type Client interface {
 }
 
 type Clients struct {
-	ProductUsage  rancherusagev1.RancherUsageRecordInterface
+	ProductUsage  productusagev1.ProductUsageInterface
 	ConfigMaps    v1.ConfigMapClient
 	Secrets       v1.SecretController
 	Notifications controller.SharedController
@@ -77,7 +71,7 @@ func New(ctx context.Context, rest *rest.Config) (*Clients, error) {
 		return nil, err
 	}
 
-	rancherUsageClient, err := rancherusage.NewForConfig(rest)
+	productUsageClient, err := productusage.NewForConfig(rest)
 	if err != nil {
                 return nil, err
         }
@@ -115,9 +109,8 @@ func New(ctx context.Context, rest *rest.Config) (*Clients, error) {
 	}
 
 	return &Clients{
-		ProductUsage:  rancherUsageClient.RecordV1().RancherUsageRecords(),
+		ProductUsage:  productUsageClient.UsagerecordsV1().ProductUsages(),
 		ConfigMaps:    clients.Core.ConfigMap(),
-		Secrets:       clients.Core.Secret(),
 		Notifications: notificationController,
 		Settings:      settingController,
 	}, nil
@@ -127,15 +120,11 @@ func New(ctx context.Context, rest *rest.Config) (*Clients, error) {
 // reading values from the env - returns an error if one or more values were not found. Values for these are defined
 // in _helpers.tpl
 func readConstantsFromEnv() error {
-	cacheName = os.Getenv(cspAdapterSecret)
 	outputNotificationName = os.Getenv(cspNotification)
 	outputConfigMapName = os.Getenv(cspAdapterConfigMap)
 	hostnameSetting = os.Getenv(hostnameSettingEnv)
 	versionSetting = os.Getenv(versionSettingEnv)
 	var missingEnvVars []string
-	if cacheName == "" {
-		missingEnvVars = append(missingEnvVars, cspAdapterSecret)
-	}
 	if outputNotificationName == "" {
 		missingEnvVars = append(missingEnvVars, cspNotification)
 	}
@@ -152,30 +141,6 @@ func readConstantsFromEnv() error {
 		return nil
 	}
 	return fmt.Errorf("unable to read required env vars %v", missingEnvVars)
-}
-
-func (c *Clients) GetConsumptionTokenSecret() (*corev1.Secret, error) {
-	return c.Secrets.Get(cspAdapterNamespace, cacheName, metav1.GetOptions{})
-}
-
-func (c *Clients) UpdateConsumptionTokenSecret(data map[string]string) error {
-	secret, err := c.Secrets.Get(cspAdapterNamespace, cacheName, metav1.GetOptions{})
-	if err != nil {
-		if apierror.IsNotFound(err) {
-			_, err = c.Secrets.Create(&corev1.Secret{
-				StringData: data,
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      cacheName,
-					Namespace: cspAdapterNamespace,
-				},
-			})
-		}
-		return err
-	}
-	secret = secret.DeepCopy()
-	secret.StringData = data
-	_, err = c.Secrets.Update(secret)
-	return err
 }
 
 func (c *Clients) UpdateCSPConfigOutput(marshalledData []byte) error {
@@ -265,7 +230,7 @@ func (c *Clients) UpdateProductUsage(managedNodes uint32) error {
 		if err != nil {
                 	return err
         	}
-                _, err = c.ProductUsage.Create(context.TODO(), &rancherusagerecordv1.RancherUsageRecord{
+                _, err = c.ProductUsage.Create(context.TODO(), &usagerecordsv1.ProductUsage{
                         ObjectMeta: metav1.ObjectMeta{
                                 Name: "rancher-usage-record",
                         },
