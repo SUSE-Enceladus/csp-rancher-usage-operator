@@ -1,6 +1,8 @@
 package mocks
 
 import (
+	"errors"
+
 	"github.com/SUSE-Enceladus/csp-rancher-usage-operator/pkg/metrics"
 )
 
@@ -15,8 +17,14 @@ func NewMockScraper(numNodes int) *MockScraper {
 }
 
 func (m *MockScraper) ScrapeAndParse() (*metrics.NodeCounts, error) {
-	// TODO: Error case
-	return &metrics.NodeCounts{
-		Total: m.Nodes,
-	}, nil
+	if m.Nodes >= 0 {
+		return &metrics.NodeCounts{
+			Total: m.Nodes,
+		}, nil
+	} else {
+		// Trigger error
+		return &metrics.NodeCounts{
+			Total: m.Nodes,
+		}, errors.New("")
+	}
 }
