@@ -131,7 +131,7 @@ func (m *UsageOperator) checkAndUpdateUserNotifications() error {
                 return err
         }
 	if lastBilledDate.AddDate(0, 0, int(noBillThreshold)).Before(time.Now()) {
-		cspErrors = "It's been " + strconv.Itoa(int(noBillThreshold)) + " days since last billed. "
+		cspErrors = "It's been more than " + strconv.Itoa(int(noBillThreshold)) + " days since last billed. "
 	}
 	if len(cspErrors) > 0 {
                 if len(config.Errors) > 0 {
