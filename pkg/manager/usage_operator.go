@@ -21,6 +21,8 @@ type UsageOperator struct {
 }
 
 const (
+	// TODO(gyee): need to make this configurable in helm
+	managerInterval = 30 * time.Second
         cspBillingNoBillThreshold   = "K8S_CSP_BILLING_NO_BILL_THRESHOLD"
 )
 
@@ -64,10 +66,6 @@ func readConstantsFromEnv() error {
 func (m *UsageOperator) Start(ctx context.Context, errs chan<- error) {
 	go m.start(ctx, errs)
 }
-
-const (
-	managerInterval = 30 * time.Second
-)
 
 func (m *UsageOperator) start(ctx context.Context, errs chan<- error) {
 	for range ticker(ctx, managerInterval) {
