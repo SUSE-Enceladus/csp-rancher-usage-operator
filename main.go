@@ -57,7 +57,10 @@ func run() error {
 		return fmt.Errorf("failed to start, unable to get hostname: %v", err)
 	}
 
-	m := manager.NewUsageOperator(k8sClients, metrics.NewScraper(hostname, cfg))
+	m, err := manager.NewUsageOperator(k8sClients, metrics.NewScraper(hostname, cfg))
+	if err != nil {
+                return err
+        }
 
 	errs := make(chan error, 1)
 	m.Start(ctx, errs)

@@ -16,14 +16,14 @@ spec:
       - env:
         - name: CATTLE_DEBUG
           value: {{ .Values.debug | quote }}
-        - name: CATTLE_DEV_MODE
-          value: {{ .Values.devMode | quote }}
-        - name: K8S_OUTPUT_CONFIGMAP
-          value: '{{ template "csp-usage-operator.outputConfigMap"  }}'
+        - name: K8S_CSP_BILLING_ADAPTER_NAMESPACE
+          value: '{{ template "csp-usage-operator.cspBillingAdapterNamespace" }}'
+        - name: K8S_CSP_BILLING_ADAPTER_CONFIGMAP
+          value: '{{ template "csp-usage-operator.cspBillingAdapterConfigMap" }}'
+        - name: K8S_CSP_BILLING_NO_BILL_THRESHOLD
+          value: '{{ template "csp-usage-operator.cspBillingNoBillThreshold" }}'
         - name: K8S_OUTPUT_NOTIFICATION
           value: '{{ template "csp-usage-operator.outputNotification" }}'
-        - name: K8S_CACHE_SECRET
-          value: '{{ template "csp-usage-operator.cacheSecret"  }}'
         - name: K8S_HOSTNAME_SETTING
           value: '{{ template "csp-usage-operator.hostnameSetting"  }}'
         - name: K8S_RANCHER_VERSION_SETTING

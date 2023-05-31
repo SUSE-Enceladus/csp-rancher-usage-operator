@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -24,34 +25,41 @@ import (
 )
 
 const (
-	cspAdapterNamespace = "cattle-csp-usage-operator-system"
-	cspAdapterConfigMap = "K8S_OUTPUT_CONFIGMAP"
-	cspNotification     = "K8S_OUTPUT_NOTIFICATION"
-	hostnameSettingEnv  = "K8S_HOSTNAME_SETTING"
-	versionSettingEnv   = "K8S_RANCHER_VERSION_SETTING"
-	cspConfigKey        = "data"
-	cspComponentName    = "csp-usage-operator"
-	baseProductPrefix   = "cpe:/o:suse:rancher:"
+	cspBillingAdapterNamespace  = "K8S_CSP_BILLING_ADAPTER_NAMESPACE"
+	cspBillingAdapterConfigMap  = "K8S_CSP_BILLING_ADAPTER_CONFIGMAP"
+	cspBillingNoBillThreshold   = "K8S_CSP_BILLING_NO_BILL_THRESHOLD"
+	cspNotification             = "K8S_OUTPUT_NOTIFICATION"
+	hostnameSettingEnv          = "K8S_HOSTNAME_SETTING"
+	versionSettingEnv           = "K8S_RANCHER_VERSION_SETTING"
+	cspConfigKey                = "data"
+	// TODO(gyee): need to update Rancher UI code to look for csp-usage-operator here
+	// https://github.com/rancher/dashboard/blob/d112f1781d8efd96daeacbf23fe0f341e3a0b28a/shell/components/AwsComplianceBanner.vue#L20
+	cspComponentName            = "csp-adapter"
+	baseProductPrefix           = "cpe:/o:suse:rancher:"
 )
 
 var (
-	outputConfigMapName    string
-	outputNotificationName string
-	hostnameSetting        string
-	versionSetting         string
+	cspBillingNamespace        string
+	cspBillingConfigMapName	   string
+	noBillThreshold            uint32
+	outputNotificationName     string
+	hostnameSetting            string
+	versionSetting             string
 )
 
 type Client interface {
 	// UpdateCSPConfigOutput stores config to k8s as a configmap with a static/constant name
 	UpdateCSPConfigOutput(marshalledData []byte) error
 	// UpdateUserNotification creates/updates a RancherUserNotification based on isInCompliance and the provided message
-	UpdateUserNotification(isInCompliance bool, message string) error
+	UpdateUserNotification(clearError bool, message string) error
 	// GetRancherHostname finds the hostname for the core rancher install from the settings.
 	GetRancherHostname() (string, error)
 	// GetRancherVersion finds the version of rancher from the settings
 	GetRancherVersion() (string, error)
 	// UpdateProductUsage updates the RancherUsageRecord with the current managed node count
 	UpdateProductUsage(managedNodes uint32) error
+	// get CSP config data
+	GetCSPConfigData() (string, error)
 }
 
 type Clients struct {
@@ -122,15 +130,31 @@ func New(ctx context.Context, rest *rest.Config) (*Clients, error) {
 // in _helpers.tpl
 func readConstantsFromEnv() error {
 	outputNotificationName = os.Getenv(cspNotification)
-	outputConfigMapName = os.Getenv(cspAdapterConfigMap)
+	cspBillingNamespace = os.Getenv(cspBillingAdapterNamespace)
+	cspBillingConfigMapName = os.Getenv(cspBillingAdapterConfigMap)
+	var noBillThresholdStr string = os.Getenv(cspBillingNoBillThreshold)
 	hostnameSetting = os.Getenv(hostnameSettingEnv)
 	versionSetting = os.Getenv(versionSettingEnv)
 	var missingEnvVars []string
+	if cspBillingNamespace == "" {
+		missingEnvVars = append(missingEnvVars, cspBillingAdapterNamespace)
+        } 
+	if cspBillingConfigMapName == "" {
+		missingEnvVars = append(missingEnvVars, cspBillingAdapterConfigMap)
+	}
+        if noBillThresholdStr == "" {
+		missingEnvVars = append(missingEnvVars, cspBillingNoBillThreshold)
+	} else {
+		noBillThresholdInt, err := strconv.Atoi(noBillThresholdStr)
+		if err != nil {
+			missingEnvVars = append(missingEnvVars, cspBillingNoBillThreshold)
+		} else {
+			noBillThreshold = uint32(noBillThresholdInt)
+		}
+	}
+
 	if outputNotificationName == "" {
 		missingEnvVars = append(missingEnvVars, cspNotification)
-	}
-	if outputConfigMapName == "" {
-		missingEnvVars = append(missingEnvVars, cspAdapterConfigMap)
 	}
 	if hostnameSetting == "" {
 		missingEnvVars = append(missingEnvVars, hostnameSettingEnv)
@@ -149,13 +173,13 @@ func (c *Clients) UpdateCSPConfigOutput(marshalledData []byte) error {
 	data := map[string]string{
 		cspConfigKey: string(marshalledData),
 	}
-	currentConfigMap, err := c.ConfigMaps.Get(cspAdapterNamespace, outputConfigMapName, metav1.GetOptions{})
+	currentConfigMap, err := c.ConfigMaps.Get(cspBillingAdapterNamespace, cspBillingConfigMapName, metav1.GetOptions{})
 	if apierror.IsNotFound(err) {
 		_, err = c.ConfigMaps.Create(&corev1.ConfigMap{
 			Data: data,
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      outputConfigMapName,
-				Namespace: cspAdapterNamespace,
+				Name:      cspBillingConfigMapName,
+				Namespace: cspBillingAdapterNamespace,
 			},
 		})
 		return err
@@ -166,9 +190,9 @@ func (c *Clients) UpdateCSPConfigOutput(marshalledData []byte) error {
 	return err
 }
 
-func (c *Clients) UpdateUserNotification(isInCompliance bool, message string) error {
-	if isInCompliance {
-		// if we are in compliance, remove any existing notification
+func (c *Clients) UpdateUserNotification(clearError bool, message string) error {
+	if clearError {
+		// Clear user notifications
 		err := c.Notifications.Client().Delete(context.TODO(), "", outputNotificationName, metav1.DeleteOptions{})
 		if err != nil && !apierror.IsNotFound(err) {
 			// ignore not found errors - this means we didn't have a notification to delete, so we didn't need to adjust
@@ -247,4 +271,12 @@ func (c *Clients) UpdateProductUsage(managedNodes uint32) error {
 	currentUsage.ReportingTime = reportingTime
         _, err = c.ProductUsage.Update(context.TODO(), currentUsage, metav1.UpdateOptions{})
         return err
+}
+
+func (c *Clients) GetCSPConfigData() (string, error) {
+	currentConfigMap, err := c.ConfigMaps.Get(cspBillingNamespace, cspBillingConfigMapName, metav1.GetOptions{})
+	if err != nil {
+        	return "", err
+        }
+	return currentConfigMap.Data[cspConfigKey], err
 }

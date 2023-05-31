@@ -5,11 +5,7 @@ devMode: true
 image:
   repository: yeey/csp-rancher-usage-operator
   tag: latest
-  imagePullPolicy: IfNotPresent
-
-global:
-  cattle:
-    systemDefaultRegistry: ""
+  imagePullPolicy: Always
 
 serviceAccount:
   create: true
@@ -18,4 +14,4 @@ tolerations: []
 
 # if rancher is using a privateCA, this certificate must be provided as a secret in the adapter's namespace - see the
 # readme/docs for more details
-#additionalTrustedCAs: true
+additionalTrustedCAs: true

@@ -76,47 +76,27 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: {{ .Chart.Name }}-role
-  namespace: cattle-csp-usage-operator-system
+  name: {{ .Chart.Name }}-configmap-reader-role
+  namespace: {{ template "csp-usage-operator.cspBillingAdapterNamespace" }}
 rules:
 - apiGroups:
   - ""
   resources:
-  - secrets
-  resourceNames:
-  - {{ template "csp-usage-operator.cacheSecret"  }}
-  verbs:
-  - "*"
-- apiGroups:
-  - ""
-  resources:
-  - secrets
-  verbs:
-  - create
-- apiGroups:
-  - ""
-  resources:
   - configmaps
   resourceNames:
-  - {{ template "csp-usage-operator.outputConfigMap"  }}
+  - {{ template "csp-usage-operator.cspBillingAdapterConfigMap"  }}
   verbs:
   - "*"
-- apiGroups:
-  - ""
-  resources:
-  - configmaps
-  verbs:
-  - create
----
+--- 
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: {{ .Chart.Name }}-binding
-  namespace: cattle-csp-usage-operator-system
+  namespace: {{ template "csp-usage-operator.cspBillingAdapterNamespace" }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: {{ .Chart.Name }}-role
+  name: {{ .Chart.Name }}-configmap-reader-role
 subjects:
   - kind: ServiceAccount
     name: {{ .Chart.Name }}
