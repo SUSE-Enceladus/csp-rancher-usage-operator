@@ -16,7 +16,7 @@ csp-config
 # to bill them and that they must fix any ongoing issues related to billing
 # in order to maintain supportability.
 {{- define "csp-usage-operator.cspBillingNoBillThreshold" -}}
-30
+45
 {{- end }}
 
 {{- define "csp-usage-operator.outputNotification" -}}
