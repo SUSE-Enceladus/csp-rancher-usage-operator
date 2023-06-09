@@ -22,15 +22,16 @@ type testResult struct {
 }
 
 func (s *testScenario) runGetNodeCountScenario(t *testing.T) {
+
+	t.Setenv("K8S_CSP_BILLING_NO_BILL_THRESHOLD", "45")
 	mockK8sClient := mocks.NewMockK8sClient()
 
 	if s.result.errResult {
 		// Validate the node count for error usecase
+		// Create an instance of the mock object
 		mockScraper := mocks.NewMockScraper(s.numRancherNodes)
-		mockUsageOperator := UsageOperator{
-			k8s:     mockK8sClient,
-			scraper: mockScraper,
-		}
+		mockUsageOperator, e := NewUsageOperator(mockK8sClient, mockScraper)
+		assert.NoError(t, e)
 
 		nodeCount, err := mockUsageOperator.getNodeCount(context.TODO())
 		assert.Error(t, err, fmt.Sprintf("Scenario: %v", s))
@@ -40,10 +41,8 @@ func (s *testScenario) runGetNodeCountScenario(t *testing.T) {
 	} else {
 		// Validate the node count for success usecase
 		mockScraper := mocks.NewMockScraper(s.numRancherNodes)
-		mockUsageOperator := UsageOperator{
-			k8s:     mockK8sClient,
-			scraper: mockScraper,
-		}
+		mockUsageOperator, e := NewUsageOperator(mockK8sClient, mockScraper)
+		assert.NoError(t, e)
 
 		nodeCount, err := mockUsageOperator.getNodeCount(context.TODO())
 		assert.NoError(t, err, fmt.Sprintf("Scenario: %v", s))
@@ -110,14 +109,14 @@ func (s *testScenario) runStartScenario(t *testing.T) {
 	hook := test.NewGlobal()
 	hook.Reset()
 
+	t.Setenv("K8S_CSP_BILLING_NO_BILL_THRESHOLD", "45")
+
 	if s.result.errResult {
 		// Validate channel for specific error "unable to determine number of active nodes"
 		// Validate log for specific message "Unable to get managed node count. Will not update usage record."
 		mockScraper := mocks.NewMockScraper(s.numRancherNodes)
-		mockUsageOperator := UsageOperator{
-			k8s:     mockK8sClient,
-			scraper: mockScraper,
-		}
+		mockUsageOperator, e := NewUsageOperator(mockK8sClient, mockScraper)
+		assert.NoError(t, e)
 
 		ctxWithCancel, cancelFunction := context.WithCancel(context.TODO())
 		testChan := make(chan error, 1)
@@ -146,10 +145,8 @@ func (s *testScenario) runStartScenario(t *testing.T) {
 		// Validate channel for no errors
 		// Validate log for specific message "Node Count x"
 		mockScraper := mocks.NewMockScraper(s.numRancherNodes)
-		mockUsageOperator := UsageOperator{
-			k8s:     mockK8sClient,
-			scraper: mockScraper,
-		}
+		mockUsageOperator, e := NewUsageOperator(mockK8sClient, mockScraper)
+		assert.NoError(t, e)
 
 		//Derive a context with cancel
 		ctxWithCancel, cancelFunction := context.WithCancel(context.TODO())
@@ -172,10 +169,26 @@ func (s *testScenario) runStartScenario(t *testing.T) {
 		assert.Contains(t, joinedString, "Calculating managed nodes")
 		assert.Contains(t, joinedString, msgExpected)
 
+		// Validate Product Usage Updated
+		// k8sclient handles count as uint32, scraper handles count as int
+		assert.Equal(t, mockK8sClient.CurrentManagedNodeCount, uint32(s.numRancherNodes))
+
+		// Validate that no errors in usernotification
+		assert.Equal(t, mockK8sClient.CurrentNotificationMessage, "")
+
 		hook.Reset()
 		assert.Nil(t, hook.LastEntry())
 
 		close(testChan)
 		cancelFunction()
 	}
+}
+
+func TestNoEnvFlag(t *testing.T) {
+	mockK8sClient := mocks.NewMockK8sClient()
+	mockScraper := mocks.NewMockScraper(5)
+	mockUsageOperator, e := NewUsageOperator(mockK8sClient, mockScraper)
+	assert.Error(t, e)
+	assert.Contains(t, e.Error(), "unable to read required env vars")
+	assert.Nil(t, mockUsageOperator)
 }

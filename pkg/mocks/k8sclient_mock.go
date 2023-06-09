@@ -11,6 +11,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )*/
 
+const timeFormat = time.RFC3339
+
 type MockK8sClient struct {
 	CurrentSupportConfig       []byte
 	CurrentManagedNodeCount    uint32
@@ -31,8 +33,8 @@ func (m *MockK8sClient) UpdateCSPConfigOutput(marshalledData []byte) error {
 	return nil
 }
 
-func (m *MockK8sClient) UpdateUserNotification(isInCompliance bool, message string) error {
-	if !isInCompliance {
+func (m *MockK8sClient) UpdateUserNotification(clearError bool, message string) error {
+	if !clearError {
 		m.CurrentNotificationMessage = message
 	}
 	return nil
@@ -53,11 +55,11 @@ func (m *MockK8sClient) UpdateProductUsage(managedNodes uint32) error {
 
 func (m *MockK8sClient) GetCSPConfigData() (string, error) {
 	data := map[string]interface{}{
-		"timestamp":             time.Now().Format(time.RFC3339),
+		"timestamp":             time.Now().Format(timeFormat),
 		"billing_api_access_ok": true,
-		"expire":                time.Now().AddDate(0, 1, 0).Format(time.RFC3339),
+		"expire":                time.Now().AddDate(0, 1, 0).Format(timeFormat),
 		"errors":                []string{""},
-		"last_billed":           time.Now().AddDate(0, 0, -25).Format(time.RFC3339),
+		"last_billed":           time.Now().AddDate(0, 0, -25).Format(timeFormat),
 		"usage": map[string]interface{}{
 			"foo": 10,
 		},
