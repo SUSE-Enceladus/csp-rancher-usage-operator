@@ -249,7 +249,7 @@ func (c *Clients) GetRancherVersion() (string, error) {
 
 func (c *Clients) UpdateProductUsage(managedNodes uint32) error {
         currentUsage, err := c.ProductUsage.Get(context.TODO(), "rancher-usage-record", metav1.GetOptions{})
-	reportingTime := time.Now().Format(time.RFC3339Nano)
+	reportingTime := time.Now().Format(time.RFC3339)
         if apierror.IsNotFound(err) {
 		rancherVersion, err := c.GetRancherVersion()
 		if err != nil {
