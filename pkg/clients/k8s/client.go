@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -13,10 +12,9 @@ import (
 	v3 "github.com/rancher/rancher/pkg/apis/management.cattle.io/v3"
 	"github.com/rancher/wrangler/pkg/clients"
 	v1 "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
-	usagerecordsv1 "github.com/SUSE-Enceladus/csp-rancher-usage-operator/api/usagerecords/v1"
-	productusage "github.com/SUSE-Enceladus/csp-rancher-usage-operator/generated/clientset/versioned"
-	productusagev1 "github.com/SUSE-Enceladus/csp-rancher-usage-operator/generated/clientset/versioned/typed/usagerecords/v1"
-	corev1 "k8s.io/api/core/v1"
+	susecloudnetv1 "github.com/SUSE-Enceladus/csp-rancher-usage-operator/api/susecloud.net/v1"
+	susecloud "github.com/SUSE-Enceladus/csp-rancher-usage-operator/generated/clientset/versioned"
+	cspadapterusagerecordv1 "github.com/SUSE-Enceladus/csp-rancher-usage-operator/generated/clientset/versioned/typed/susecloud.net/v1"
 	apierror "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -41,15 +39,12 @@ const (
 var (
 	cspBillingNamespace        string
 	cspBillingConfigMapName	   string
-	noBillThreshold            uint32
 	outputNotificationName     string
 	hostnameSetting            string
 	versionSetting             string
 )
 
 type Client interface {
-	// UpdateCSPConfigOutput stores config to k8s as a configmap with a static/constant name
-	UpdateCSPConfigOutput(marshalledData []byte) error
 	// UpdateUserNotification creates/updates a RancherUserNotification based on isInCompliance and the provided message
 	UpdateUserNotification(clearError bool, message string) error
 	// GetRancherHostname finds the hostname for the core rancher install from the settings.
@@ -57,13 +52,13 @@ type Client interface {
 	// GetRancherVersion finds the version of rancher from the settings
 	GetRancherVersion() (string, error)
 	// UpdateProductUsage updates the RancherUsageRecord with the current managed node count
-	UpdateProductUsage(managedNodes uint32) error
+	UpdateProductUsage(managedNodes int) error
 	// get CSP config data
 	GetCSPConfigData() (string, error)
 }
 
 type Clients struct {
-	ProductUsage  productusagev1.ProductUsageInterface
+	UsageRecord   cspadapterusagerecordv1.CSPAdapterUsageRecordInterface
 	ConfigMaps    v1.ConfigMapClient
 	Secrets       v1.SecretController
 	Notifications controller.SharedController
@@ -80,7 +75,7 @@ func New(ctx context.Context, rest *rest.Config) (*Clients, error) {
 		return nil, err
 	}
 
-	productUsageClient, err := productusage.NewForConfig(rest)
+	susecloudClient, err := susecloud.NewForConfig(rest)
 	if err != nil {
                 return nil, err
         }
@@ -118,7 +113,7 @@ func New(ctx context.Context, rest *rest.Config) (*Clients, error) {
 	}
 
 	return &Clients{
-		ProductUsage:  productUsageClient.UsagerecordsV1().ProductUsages(),
+		UsageRecord:   susecloudClient.SusecloudV1().CSPAdapterUsageRecords(),
 		ConfigMaps:    clients.Core.ConfigMap(),
 		Notifications: notificationController,
 		Settings:      settingController,
@@ -132,7 +127,6 @@ func readConstantsFromEnv() error {
 	outputNotificationName = os.Getenv(cspNotification)
 	cspBillingNamespace = os.Getenv(cspBillingAdapterNamespace)
 	cspBillingConfigMapName = os.Getenv(cspBillingAdapterConfigMap)
-	var noBillThresholdStr string = os.Getenv(cspBillingNoBillThreshold)
 	hostnameSetting = os.Getenv(hostnameSettingEnv)
 	versionSetting = os.Getenv(versionSettingEnv)
 	var missingEnvVars []string
@@ -141,16 +135,6 @@ func readConstantsFromEnv() error {
         } 
 	if cspBillingConfigMapName == "" {
 		missingEnvVars = append(missingEnvVars, cspBillingAdapterConfigMap)
-	}
-        if noBillThresholdStr == "" {
-		missingEnvVars = append(missingEnvVars, cspBillingNoBillThreshold)
-	} else {
-		noBillThresholdInt, err := strconv.Atoi(noBillThresholdStr)
-		if err != nil {
-			missingEnvVars = append(missingEnvVars, cspBillingNoBillThreshold)
-		} else {
-			noBillThreshold = uint32(noBillThresholdInt)
-		}
 	}
 
 	if outputNotificationName == "" {
@@ -166,28 +150,6 @@ func readConstantsFromEnv() error {
 		return nil
 	}
 	return fmt.Errorf("unable to read required env vars %v", missingEnvVars)
-}
-
-func (c *Clients) UpdateCSPConfigOutput(marshalledData []byte) error {
-	// since the data from this output is nested, we have to stick this all under one key in raw format
-	data := map[string]string{
-		cspConfigKey: string(marshalledData),
-	}
-	currentConfigMap, err := c.ConfigMaps.Get(cspBillingAdapterNamespace, cspBillingConfigMapName, metav1.GetOptions{})
-	if apierror.IsNotFound(err) {
-		_, err = c.ConfigMaps.Create(&corev1.ConfigMap{
-			Data: data,
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      cspBillingConfigMapName,
-				Namespace: cspBillingAdapterNamespace,
-			},
-		})
-		return err
-	}
-	currentConfigMap = currentConfigMap.DeepCopy()
-	currentConfigMap.Data = data
-	_, err = c.ConfigMaps.Update(currentConfigMap)
-	return err
 }
 
 func (c *Clients) UpdateUserNotification(clearError bool, message string) error {
@@ -247,30 +209,39 @@ func (c *Clients) GetRancherVersion() (string, error) {
 	return setting.Value, nil
 }
 
-func (c *Clients) UpdateProductUsage(managedNodes uint32) error {
-        currentUsage, err := c.ProductUsage.Get(context.TODO(), "rancher-usage-record", metav1.GetOptions{})
+func (c *Clients) UpdateProductUsage(managedNodes int) error {
+        currentUsage, err := c.UsageRecord.Get(context.TODO(), "rancher-usage-record", metav1.GetOptions{})
 	reportingTime := time.Now().Format(time.RFC3339)
-        if apierror.IsNotFound(err) {
-		rancherVersion, err := c.GetRancherVersion()
-		if err != nil {
-                	return err
-        	}
-                _, err = c.ProductUsage.Create(context.TODO(), &usagerecordsv1.ProductUsage{
-                        ObjectMeta: metav1.ObjectMeta{
-                                Name: "rancher-usage-record",
-                        },
-			// TODO(gyee): check with PM about base product. Use "Rancher ${VERISON}" for now
-			BaseProduct: baseProductPrefix + rancherVersion,
-			ManagedNodeCount: managedNodes,
-			ReportingTime: reportingTime,
-                }, metav1.CreateOptions{})
-                return err
+	if err != nil {
+        	if apierror.IsNotFound(err) {
+			rancherVersion, err := c.GetRancherVersion()
+			if err != nil {
+				return fmt.Errorf("error looking up Rancher version %w", err)
+        		}
+                	_, err = c.UsageRecord.Create(context.TODO(), &susecloudnetv1.CSPAdapterUsageRecord{
+                        	ObjectMeta: metav1.ObjectMeta{
+                                	Name: "rancher-usage-record",
+                        	},
+				// TODO(gyee): check with PM about base product. Use "Rancher ${VERISON}" for now
+				BaseProduct: baseProductPrefix + rancherVersion,
+				ManagedNodeCount: managedNodes,
+				ReportingTime: reportingTime,
+                	}, metav1.CreateOptions{})
+			if err != nil {
+				return fmt.Errorf("error creating rancher-usage-record %w", err)
+			}
+                	return nil
+		}
+		return fmt.Errorf("error looking up rancher-usage-record %w", err)
         }
         currentUsage = currentUsage.DeepCopy()
         currentUsage.ManagedNodeCount = managedNodes
 	currentUsage.ReportingTime = reportingTime
-        _, err = c.ProductUsage.Update(context.TODO(), currentUsage, metav1.UpdateOptions{})
-        return err
+        _, err = c.UsageRecord.Update(context.TODO(), currentUsage, metav1.UpdateOptions{})
+	if err != nil {
+		return fmt.Errorf("error updating rancher-usage-record %w", err)
+	}
+        return nil
 }
 
 func (c *Clients) GetCSPConfigData() (string, error) {

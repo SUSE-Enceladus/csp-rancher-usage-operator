@@ -51,9 +51,9 @@ rules:
   - list
   - watch
 - apiGroups:
-  - usagerecords.suse.com
+  - susecloud.net
   resources:
-  - productusages
+  - cspadapterusagerecords
   verbs:
   - create
   - get
@@ -70,8 +70,8 @@ roleRef:
   name: {{ .Chart.Name }}-cluster-role
 subjects:
   - kind: ServiceAccount
-    name: {{ .Chart.Name }}
-    namespace: cattle-csp-usage-operator-system
+    name: {{ include "csp-rancher-usage-operator.serviceAccountName" . }}
+    namespace: cattle-csp-billing-adapter-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -99,5 +99,5 @@ roleRef:
   name: {{ .Chart.Name }}-configmap-reader-role
 subjects:
   - kind: ServiceAccount
-    name: {{ .Chart.Name }}
-    namespace: cattle-csp-usage-operator-system
+    name: {{ include "csp-rancher-usage-operator.serviceAccountName" . }}
+    namespace: cattle-csp-billing-adapter-system

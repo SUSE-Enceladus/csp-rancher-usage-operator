@@ -5,20 +5,23 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.11.3
   creationTimestamp: null
-  name: productusages.usagerecords.suse.com
+  name: cspadapterusagerecords.susecloud.net
 spec:
-  group: usagerecords.suse.com
+  group: susecloud.net
   names:
-    kind: ProductUsage
-    listKind: ProductUsageList
-    plural: productusages
-    singular: productusage
+    kind: CSPAdapterUsageRecord
+    listKind: CSPAdapterUsageRecordList
+    plural: cspadapterusagerecords
+    singular: cspadapterusagerecord
+    shortNames:
+    - caur
   scope: Cluster
   versions:
   - name: v1
     schema:
       openAPIV3Schema:
-        description: ProductUsage is the Schema for the productusages API
+        description: CSPAdapterUsageRecord is the Schema for the cspadapterusagerecords
+          API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -33,7 +36,6 @@ spec:
               submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
             type: string
           managed_node_count:
-            format: int32
             type: integer
           metadata:
             type: object

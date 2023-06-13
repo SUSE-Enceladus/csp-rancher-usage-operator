@@ -31,25 +31,23 @@ import (
 //+kubebuilder:resource:scope=Cluster
 //+kubebuilder:object:root=true
 
-// ProductUsage is the Schema for the productusages API
-type ProductUsage struct {
+// CSPAdapterUsageRecord is the Schema for the cspadapterusagerecords API
+type CSPAdapterUsageRecord struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	BaseProduct      string `json:"base_product"`
-        ManagedNodeCount uint32 `json:"managed_node_count"`
+        ManagedNodeCount int    `json:"managed_node_count"`
         ReportingTime    string `json:"reporting_time"`
 }
 
-//+kubebuilder:object:root=true
-
-// ProductUsageList contains a list of ProductUsage
-type ProductUsageList struct {
+// CSPAdapterUsageRecordList contains a list of CSPAdapterUsageRecord
+type CSPAdapterUsageRecordList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []ProductUsage `json:"items"`
+	Items           []CSPAdapterUsageRecord `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&ProductUsage{}, &ProductUsageList{})
+	SchemeBuilder.Register(&CSPAdapterUsageRecord{}, &CSPAdapterUsageRecordList{})
 }

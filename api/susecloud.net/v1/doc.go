@@ -1,5 +1,5 @@
 // +k8s:deepcopy-gen=package
-// +groupName=usagerecords.suse.com
+// +groupName=susecloud.net
 
 package v1
 
