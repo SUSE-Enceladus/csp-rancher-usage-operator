@@ -21,62 +21,6 @@ type testResult struct {
 	errResult bool
 }
 
-func (s *testScenario) runGetNodeCountScenario(t *testing.T) {
-
-	t.Setenv("K8S_CSP_BILLING_NO_BILL_THRESHOLD", "45")
-	mockK8sClient := mocks.NewMockK8sClient()
-
-	if s.result.errResult {
-		// Validate the node count for error usecase
-		// Create an instance of the mock object
-		mockScraper := mocks.NewMockScraper(s.numRancherNodes)
-		mockUsageOperator, e := NewUsageOperator(mockK8sClient, mockScraper)
-		assert.NoError(t, e)
-
-		nodeCount, err := mockUsageOperator.getNodeCount(context.TODO())
-		assert.Error(t, err, fmt.Sprintf("Scenario: %v", s))
-		assert.Contains(t, err.Error(), "unable to determine number of active nodes")
-		assert.Equal(t, nodeCount, 0) // count is returned as 0 when err != nil
-
-	} else {
-		// Validate the node count for success usecase
-		mockScraper := mocks.NewMockScraper(s.numRancherNodes)
-		mockUsageOperator, e := NewUsageOperator(mockK8sClient, mockScraper)
-		assert.NoError(t, e)
-
-		nodeCount, err := mockUsageOperator.getNodeCount(context.TODO())
-		assert.NoError(t, err, fmt.Sprintf("Scenario: %v", s))
-		assert.Equal(t, nodeCount, s.numRancherNodes, "expecting managed nodes to be %d, got %d instead", s.numRancherNodes, nodeCount)
-	}
-}
-
-// TestGetNodeCount tests basic scenarios
-func TestGetNodeCount(t *testing.T) {
-	scenarios := []testScenario{
-		{
-			numRancherNodes: 20,
-			result: testResult{
-				errResult: false,
-			},
-		},
-		{
-			numRancherNodes: -1,
-			result: testResult{
-				errResult: true,
-			},
-		},
-		{
-			numRancherNodes: 0,
-			result: testResult{
-				errResult: false,
-			},
-		},
-	}
-	for _, scenario := range scenarios {
-		scenario.runGetNodeCountScenario(t)
-	}
-}
-
 func TestStart(t *testing.T) {
 	scenarios := []testScenario{
 		{
@@ -105,11 +49,18 @@ func TestStart(t *testing.T) {
 }
 
 func (s *testScenario) runStartScenario(t *testing.T) {
-	mockK8sClient := mocks.NewMockK8sClient()
+	merror := mocks.Error{
+		Trigger:   false,
+		Condition: "",
+	}
+
+	mockK8sClient := mocks.NewMockK8sClient(merror)
+
 	hook := test.NewGlobal()
 	hook.Reset()
 
 	t.Setenv("K8S_CSP_BILLING_NO_BILL_THRESHOLD", "45")
+	t.Setenv("K8S_CSP_BILLING_MANAGER_INTERVAL", "2")
 
 	if s.result.errResult {
 		// Validate channel for specific error "unable to determine number of active nodes"
@@ -118,11 +69,16 @@ func (s *testScenario) runStartScenario(t *testing.T) {
 		mockUsageOperator, e := NewUsageOperator(mockK8sClient, mockScraper)
 		assert.NoError(t, e)
 
+		nodeCount, e := mockUsageOperator.getNodeCount(context.TODO())
+		assert.Error(t, e, fmt.Sprintf("Scenario: %v", s))
+		assert.Contains(t, e.Error(), "unable to determine number of active nodes")
+		assert.Equal(t, nodeCount, 0) // count is returned as 0 when err != nil
+
 		ctxWithCancel, cancelFunction := context.WithCancel(context.TODO())
 		testChan := make(chan error, 1)
 
 		mockUsageOperator.Start(ctxWithCancel, testChan)
-		time.Sleep(35 * time.Second)
+		time.Sleep(3 * time.Second)
 		err := <-testChan
 		assert.Contains(t, err.Error(), "unable to determine number of active nodes")
 
@@ -148,6 +104,10 @@ func (s *testScenario) runStartScenario(t *testing.T) {
 		mockUsageOperator, e := NewUsageOperator(mockK8sClient, mockScraper)
 		assert.NoError(t, e)
 
+		nodeCount, e := mockUsageOperator.getNodeCount(context.TODO())
+		assert.NoError(t, e, fmt.Sprintf("Scenario: %v", s))
+		assert.Equal(t, nodeCount, s.numRancherNodes, "expecting managed nodes to be %d, got %d instead", s.numRancherNodes, nodeCount)
+
 		//Derive a context with cancel
 		ctxWithCancel, cancelFunction := context.WithCancel(context.TODO())
 
@@ -155,7 +115,7 @@ func (s *testScenario) runStartScenario(t *testing.T) {
 		testChan := make(chan error, 1)
 
 		mockUsageOperator.Start(ctxWithCancel, testChan)
-		time.Sleep(35 * time.Second)
+		time.Sleep(3 * time.Second)
 
 		assert.Equal(t, len(testChan), 0)
 
@@ -170,8 +130,7 @@ func (s *testScenario) runStartScenario(t *testing.T) {
 		assert.Contains(t, joinedString, msgExpected)
 
 		// Validate Product Usage Updated
-		// k8sclient handles count as uint32, scraper handles count as int
-		assert.Equal(t, mockK8sClient.CurrentManagedNodeCount, uint32(s.numRancherNodes))
+		assert.Equal(t, mockK8sClient.CurrentManagedNodeCount, s.numRancherNodes)
 
 		// Validate that no errors in usernotification
 		assert.Equal(t, mockK8sClient.CurrentNotificationMessage, "")
@@ -185,10 +144,194 @@ func (s *testScenario) runStartScenario(t *testing.T) {
 }
 
 func TestNoEnvFlag(t *testing.T) {
-	mockK8sClient := mocks.NewMockK8sClient()
+	// No environment flags
+	merror := mocks.Error{
+		Trigger:   false,
+		Condition: "",
+	}
+
+	mockK8sClient := mocks.NewMockK8sClient(merror)
 	mockScraper := mocks.NewMockScraper(5)
 	mockUsageOperator, e := NewUsageOperator(mockK8sClient, mockScraper)
 	assert.Error(t, e)
 	assert.Contains(t, e.Error(), "unable to read required env vars")
 	assert.Nil(t, mockUsageOperator)
+}
+
+type testScenarioInvalidCSPConfigUserNotification struct {
+	numRancherNodes         int
+	expectedNotificationMsg string
+	Error                   mocks.Error
+}
+
+func TestInvalidCSPConfigUserNotification(t *testing.T) {
+	scenarios := []testScenarioInvalidCSPConfigUserNotification{
+		{
+			numRancherNodes:         1,
+			expectedNotificationMsg: "Unable to access billing API.",
+			Error: mocks.Error{
+				Trigger:   true,
+				Condition: "ErrorBillingNotExists",
+			},
+		},
+		{
+			numRancherNodes:         2,
+			expectedNotificationMsg: "Unable to access billing API.",
+			Error: mocks.Error{
+				Trigger:   true,
+				Condition: "ErrorBillingFalse",
+			},
+		},
+		{
+			numRancherNodes:         3,
+			expectedNotificationMsg: "Unable to meter usage.",
+			Error: mocks.Error{
+				Trigger:   true,
+				Condition: "ErrorExpiry",
+			},
+		},
+		//{
+		// Behavavior for this use case needs to be determined
+		//numRancherNodes:         4,
+		//expectedNotificationMsg: "????????",
+		//Error: mocks.Error{
+		//	Trigger:   true,
+		//	Condition: "ErrorLastBilledEmpty",
+		//},
+		//},
+		{
+			numRancherNodes:         5,
+			expectedNotificationMsg: "days since last billed.",
+			Error: mocks.Error{
+				Trigger:   true,
+				Condition: "ErrorLastBilledThreshold",
+			},
+		},
+	}
+	for _, scenario := range scenarios {
+		scenario.CheckUserNotifications(t)
+	}
+
+}
+
+func (s *testScenarioInvalidCSPConfigUserNotification) CheckUserNotifications(t *testing.T) {
+	t.Setenv("K8S_CSP_BILLING_NO_BILL_THRESHOLD", "45")
+	t.Setenv("K8S_CSP_BILLING_MANAGER_INTERVAL", "2")
+
+	mockK8sClient := mocks.NewMockK8sClient(s.Error)
+	mockScraper := mocks.NewMockScraper(s.numRancherNodes)
+	mockUsageOperator, e := NewUsageOperator(mockK8sClient, mockScraper)
+
+	assert.NoError(t, e)
+
+	//Derive a context with cancel
+	ctxWithCancel, cancelFunction := context.WithCancel(context.TODO())
+
+	// create channels
+	testChan := make(chan error, 1)
+
+	mockUsageOperator.Start(ctxWithCancel, testChan)
+	time.Sleep(3 * time.Second)
+
+	// Validate for specific errors in usernotification
+	assert.Contains(t, mockK8sClient.CurrentNotificationMessage, s.expectedNotificationMsg)
+
+	close(testChan)
+	cancelFunction()
+
+}
+
+type testScenarioCSPConfigError struct {
+	numRancherNodes int
+	expectedError   string
+	Error           mocks.Error
+}
+
+func TestCSPConfigError(t *testing.T) {
+	// no user notifications
+	scenarios := []testScenarioCSPConfigError{
+		{
+			numRancherNodes: 1,
+			expectedError:   "json: unsupported type:",
+			Error: mocks.Error{
+				Trigger:   true,
+				Condition: "ErrorMarshalUnsupportedType",
+			},
+		},
+		{
+			numRancherNodes: 2,
+			expectedError:   "cannot parse",
+			Error: mocks.Error{
+				Trigger:   true,
+				Condition: "ErrorLastBilledNonRFC3339",
+			},
+		},
+	}
+	for _, scenario := range scenarios {
+		scenario.CheckError(t)
+	}
+}
+
+func (s *testScenarioCSPConfigError) CheckError(t *testing.T) {
+	t.Setenv("K8S_CSP_BILLING_NO_BILL_THRESHOLD", "45")
+	t.Setenv("K8S_CSP_BILLING_MANAGER_INTERVAL", "2")
+	mockK8sClient := mocks.NewMockK8sClient(s.Error)
+	mockScraper := mocks.NewMockScraper(s.numRancherNodes)
+	mockUsageOperator, e := NewUsageOperator(mockK8sClient, mockScraper)
+
+	assert.NoError(t, e)
+
+	//Derive a context with cancel
+	ctxWithCancel, cancelFunction := context.WithCancel(context.TODO())
+
+	// create channels
+	testChan := make(chan error, 1)
+
+	mockUsageOperator.Start(ctxWithCancel, testChan)
+	time.Sleep(3 * time.Second)
+
+	// validate error
+	err := <-testChan
+
+	expectedSubstring := s.expectedError
+	assert.Contains(t, err.Error(), expectedSubstring, "Expected error message to contain substring: "+expectedSubstring)
+
+	close(testChan)
+	cancelFunction()
+
+}
+
+func TestInvalidCSPConfigMarshalDataMalformed(t *testing.T) {
+	t.Setenv("K8S_CSP_BILLING_NO_BILL_THRESHOLD", "45")
+	t.Setenv("K8S_CSP_BILLING_MANAGER_INTERVAL", "2")
+	merror := mocks.Error{
+		Trigger:   true,
+		Condition: "ErrorMarshaldataMalformed",
+	}
+	hook := test.NewGlobal()
+	hook.Reset()
+	mockK8sClient := mocks.NewMockK8sClient(merror)
+	mockScraper := mocks.NewMockScraper(1)
+	mockUsageOperator, e := NewUsageOperator(mockK8sClient, mockScraper)
+	assert.NoError(t, e)
+
+	//Derive a context with cancel
+	ctxWithCancel, cancelFunction := context.WithCancel(context.TODO())
+
+	// create channels
+	testChan := make(chan error, 1)
+
+	mockUsageOperator.Start(ctxWithCancel, testChan)
+	time.Sleep(3 * time.Second)
+
+	// Validate specific log messages
+	var joinedString, sep string
+	for _, entry := range hook.Entries {
+		joinedString += sep + entry.Message
+		sep = " "
+	}
+	assert.Contains(t, joinedString, "Failed to unmarshal csp_config")
+	close(testChan)
+	cancelFunction()
+
 }
