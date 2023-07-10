@@ -60,7 +60,7 @@ func (s *testScenario) runStartScenario(t *testing.T) {
 	hook.Reset()
 
 	t.Setenv("K8S_CSP_BILLING_NO_BILL_THRESHOLD", "45")
-	t.Setenv("K8S_CSP_BILLING_MANAGER_INTERVAL", "2")
+	t.Setenv("K8S_CSP_BILLING_MANAGER_INTERVAL", "2s")
 
 	if s.result.errResult {
 		// Validate channel for specific error "unable to determine number of active nodes"
@@ -216,7 +216,7 @@ func TestInvalidCSPConfigUserNotification(t *testing.T) {
 
 func (s *testScenarioInvalidCSPConfigUserNotification) CheckUserNotifications(t *testing.T) {
 	t.Setenv("K8S_CSP_BILLING_NO_BILL_THRESHOLD", "45")
-	t.Setenv("K8S_CSP_BILLING_MANAGER_INTERVAL", "2")
+	t.Setenv("K8S_CSP_BILLING_MANAGER_INTERVAL", "2s")
 
 	mockK8sClient := mocks.NewMockK8sClient(s.Error)
 	mockScraper := mocks.NewMockScraper(s.numRancherNodes)
@@ -274,7 +274,7 @@ func TestCSPConfigError(t *testing.T) {
 
 func (s *testScenarioCSPConfigError) CheckError(t *testing.T) {
 	t.Setenv("K8S_CSP_BILLING_NO_BILL_THRESHOLD", "45")
-	t.Setenv("K8S_CSP_BILLING_MANAGER_INTERVAL", "2")
+	t.Setenv("K8S_CSP_BILLING_MANAGER_INTERVAL", "2s")
 	mockK8sClient := mocks.NewMockK8sClient(s.Error)
 	mockScraper := mocks.NewMockScraper(s.numRancherNodes)
 	mockUsageOperator, e := NewUsageOperator(mockK8sClient, mockScraper)
@@ -303,7 +303,7 @@ func (s *testScenarioCSPConfigError) CheckError(t *testing.T) {
 
 func TestInvalidCSPConfigMarshalDataMalformed(t *testing.T) {
 	t.Setenv("K8S_CSP_BILLING_NO_BILL_THRESHOLD", "45")
-	t.Setenv("K8S_CSP_BILLING_MANAGER_INTERVAL", "2")
+	t.Setenv("K8S_CSP_BILLING_MANAGER_INTERVAL", "2s")
 	merror := mocks.Error{
 		Trigger:   true,
 		Condition: "ErrorMarshaldataMalformed",
