@@ -2,35 +2,32 @@ package mocks
 
 import (
 	"encoding/json"
+	"errors"
 	"time"
 )
-
-/*import (
-	corev1 "k8s.io/api/core/v1"
-	apierror "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-)*/
 
 const timeFormat = time.RFC3339
 
 type MockK8sClient struct {
-	CurrentSupportConfig       []byte
-	CurrentManagedNodeCount    uint32
+	CurrentManagedNodeCount    int
 	CurrentNotificationMessage string
 	RancherHostName            string
 	RancherVersion             string
+
+	Error Error
 }
 
-func NewMockK8sClient() *MockK8sClient {
-	return &MockK8sClient{
-		CurrentSupportConfig: nil,
+type Error struct {
+	Trigger   bool
+	Condition string
+}
+
+func NewMockK8sClient(Error Error) *MockK8sClient {
+	if Error.Trigger {
+		return &MockK8sClient{Error: Error}
+	} else {
+		return &MockK8sClient{}
 	}
-}
-
-func (m *MockK8sClient) UpdateCSPConfigOutput(marshalledData []byte) error {
-	//todo: mock error
-	m.CurrentSupportConfig = marshalledData
-	return nil
 }
 
 func (m *MockK8sClient) UpdateUserNotification(clearError bool, message string) error {
@@ -41,25 +38,38 @@ func (m *MockK8sClient) UpdateUserNotification(clearError bool, message string) 
 }
 
 func (m *MockK8sClient) GetRancherHostname() (string, error) {
+	if m.Error.Trigger && m.Error.Condition == "ErrorRancherHostname" {
+		return "", errors.New("trigger mock error for GetRancherHostname")
+	}
 	return m.RancherHostName, nil
 }
 
 func (m *MockK8sClient) GetRancherVersion() (string, error) {
+	if m.Error.Trigger && m.Error.Condition == "ErrorRancherVersion" {
+		return "", errors.New("trigger mock error for GetRancherVersion")
+	}
 	return m.RancherVersion, nil
 }
 
-func (m *MockK8sClient) UpdateProductUsage(managedNodes uint32) error {
+func (m *MockK8sClient) UpdateProductUsage(managedNodes int) error {
+	//TODO: mock errorneous conditions
 	m.CurrentManagedNodeCount = managedNodes
 	return nil
 }
 
 func (m *MockK8sClient) GetCSPConfigData() (string, error) {
-	data := map[string]interface{}{
-		"timestamp":             time.Now().Format(timeFormat),
+	var data map[string]interface{}
+	timestamp := time.Now().Format(timeFormat)
+	expire := time.Now().AddDate(0, 1, 0).Format(timeFormat)
+	last_billed := time.Now().AddDate(0, 0, -25).Format(timeFormat)
+
+	// valid data
+	data = map[string]interface{}{
+		"timestamp":             timestamp,
 		"billing_api_access_ok": true,
-		"expire":                time.Now().AddDate(0, 1, 0).Format(timeFormat),
+		"expire":                expire,
 		"errors":                []string{""},
-		"last_billed":           time.Now().AddDate(0, 0, -25).Format(timeFormat),
+		"last_billed":           last_billed,
 		"usage": map[string]interface{}{
 			"foo": 10,
 		},
@@ -74,8 +84,40 @@ func (m *MockK8sClient) GetCSPConfigData() (string, error) {
 		"base_product": "cpe:/o:suse:rancher:v2.7.3",
 	}
 
+	// mocking various error conditions
+	if m.Error.Trigger && m.Error.Condition == "ErrorBillingNotExists" {
+		// Errorneous Condition - removing billing_api_access
+		delete(data, "billing_api_access_ok")
+	}
+	if m.Error.Trigger && m.Error.Condition == "ErrorBillingFalse" {
+		// Errorneous Condition - setting billing_api_access to false
+		data["billing_api_access_ok"] = false
+	}
+	if m.Error.Trigger && m.Error.Condition == "ErrorExpiry" {
+		// Errorneous Condition - expire date is in the past
+		data["expire"] = time.Now().AddDate(0, 0, -2).Format(timeFormat)
+	}
+	if m.Error.Trigger && m.Error.Condition == "ErrorLastBilledEmpty" {
+		// Errorneous Condition - last_billed empty
+		data["last_billed"] = ""
+	}
+	if m.Error.Trigger && m.Error.Condition == "ErrorLastBilledThreshold" {
+		// Errorneous Condition - last_billed beyond threshold
+		data["last_billed"] = time.Now().AddDate(0, 0, -47).Format(timeFormat)
+	}
+	if m.Error.Trigger && m.Error.Condition == "ErrorMarshalUnsupportedType" {
+		// Errorneous Condition - marshal error by adding invalid field type
+		data["email"] = make(chan string)
+	}
+	if m.Error.Trigger && m.Error.Condition == "ErrorMarshaldataMalformed" {
+		// Errorneous Condition - marshal error for malformed
+		data["billing_api_access_ok"] = "STRINGISTEADOFBOOL"
+	}
+	if m.Error.Trigger && m.Error.Condition == "ErrorLastBilledNonRFC3339" {
+		// Errorneous Condition - last_billed in non-RFC3339
+		data["last_billed"] = time.Now().AddDate(0, 0, -25).Format(time.Stamp)
+	}
 	// Convert the JSON object to a string
 	jEncData, err := json.Marshal(data)
 	return string(jEncData), err
-
 }
