@@ -25,7 +25,7 @@ import (
 	"fmt"
 	"net/http"
 
-	usagerecordsv1 "github.com/SUSE-Enceladus/csp-rancher-usage-operator/generated/clientset/versioned/typed/usagerecords/v1"
+	susecloudv1 "github.com/SUSE-Enceladus/csp-rancher-usage-operator/generated/clientset/versioned/typed/susecloud.net/v1"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
@@ -33,18 +33,18 @@ import (
 
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
-	UsagerecordsV1() usagerecordsv1.UsagerecordsV1Interface
+	SusecloudV1() susecloudv1.SusecloudV1Interface
 }
 
 // Clientset contains the clients for groups.
 type Clientset struct {
 	*discovery.DiscoveryClient
-	usagerecordsV1 *usagerecordsv1.UsagerecordsV1Client
+	susecloudV1 *susecloudv1.SusecloudV1Client
 }
 
-// UsagerecordsV1 retrieves the UsagerecordsV1Client
-func (c *Clientset) UsagerecordsV1() usagerecordsv1.UsagerecordsV1Interface {
-	return c.usagerecordsV1
+// SusecloudV1 retrieves the SusecloudV1Client
+func (c *Clientset) SusecloudV1() susecloudv1.SusecloudV1Interface {
+	return c.susecloudV1
 }
 
 // Discovery retrieves the DiscoveryClient
@@ -91,7 +91,7 @@ func NewForConfigAndClient(c *rest.Config, httpClient *http.Client) (*Clientset,
 
 	var cs Clientset
 	var err error
-	cs.usagerecordsV1, err = usagerecordsv1.NewForConfigAndClient(&configShallowCopy, httpClient)
+	cs.susecloudV1, err = susecloudv1.NewForConfigAndClient(&configShallowCopy, httpClient)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +116,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 // New creates a new Clientset for the given RESTClient.
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
-	cs.usagerecordsV1 = usagerecordsv1.New(c)
+	cs.susecloudV1 = susecloudv1.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)
 	return &cs

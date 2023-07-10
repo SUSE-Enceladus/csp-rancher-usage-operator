@@ -22,7 +22,7 @@ you may find current contact information at www.suse.com
 package scheme
 
 import (
-	usagerecordsv1 "github.com/SUSE-Enceladus/csp-rancher-usage-operator/api/usagerecords/v1"
+	susecloudv1 "github.com/SUSE-Enceladus/csp-rancher-usage-operator/api/susecloud.net/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
@@ -34,7 +34,7 @@ var Scheme = runtime.NewScheme()
 var Codecs = serializer.NewCodecFactory(Scheme)
 var ParameterCodec = runtime.NewParameterCodec(Scheme)
 var localSchemeBuilder = runtime.SchemeBuilder{
-	usagerecordsv1.AddToScheme,
+	susecloudv1.AddToScheme,
 }
 
 // AddToScheme adds all types of this clientset into the given scheme. This allows composition

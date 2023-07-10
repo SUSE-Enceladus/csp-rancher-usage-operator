@@ -21,4 +21,4 @@ you may find current contact information at www.suse.com
 
 package v1
 
-type ProductUsageExpansion interface{}
+type CSPAdapterUsageRecordExpansion interface{}

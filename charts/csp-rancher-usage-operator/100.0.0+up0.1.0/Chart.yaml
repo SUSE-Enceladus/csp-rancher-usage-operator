@@ -1,12 +1,13 @@
 apiVersion: v2
 name: csp-rancher-usage-operator
 description: Cloud Service Provider Marketplace Operator for Rancher. Monitors usage.
-version: 999
+version: 100.0.0+up0.1.0
 appVersion: 999
 annotations:
+  catalog.cattle.io/auto-install: csp-adapter-crd=match
   catalog.cattle.io/certified: rancher
   catalog.cattle.io/hidden: "true"
-  catalog.cattle.io/namespace: cattle-csp-usage-operator-system
+  catalog.cattle.io/namespace: cattle-csp-billing-adapter-system
   catalog.cattle.io/release-name: csp-rancher-usage-operator
   catalog.cattle.io/display-name: "CSP Rancher Usage Operator"
   catalog.cattle.io/scope: management

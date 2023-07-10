@@ -8,9 +8,13 @@ image:
   imagePullPolicy: Always
 
 serviceAccount:
-  create: true
+  annotations: []
+
+nodeSelector: {}
 
 tolerations: []
+
+affinity: {}
 
 # if rancher is using a privateCA, this certificate must be provided as a secret in the adapter's namespace - see the
 # readme/docs for more details

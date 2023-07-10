@@ -24,29 +24,29 @@ package v1
 import (
 	"net/http"
 
-	v1 "github.com/SUSE-Enceladus/csp-rancher-usage-operator/api/usagerecords/v1"
+	v1 "github.com/SUSE-Enceladus/csp-rancher-usage-operator/api/susecloud.net/v1"
 	"github.com/SUSE-Enceladus/csp-rancher-usage-operator/generated/clientset/versioned/scheme"
 	rest "k8s.io/client-go/rest"
 )
 
-type UsagerecordsV1Interface interface {
+type SusecloudV1Interface interface {
 	RESTClient() rest.Interface
-	ProductUsagesGetter
+	CSPAdapterUsageRecordsGetter
 }
 
-// UsagerecordsV1Client is used to interact with features provided by the usagerecords.suse.com group.
-type UsagerecordsV1Client struct {
+// SusecloudV1Client is used to interact with features provided by the susecloud.net group.
+type SusecloudV1Client struct {
 	restClient rest.Interface
 }
 
-func (c *UsagerecordsV1Client) ProductUsages() ProductUsageInterface {
-	return newProductUsages(c)
+func (c *SusecloudV1Client) CSPAdapterUsageRecords() CSPAdapterUsageRecordInterface {
+	return newCSPAdapterUsageRecords(c)
 }
 
-// NewForConfig creates a new UsagerecordsV1Client for the given config.
+// NewForConfig creates a new SusecloudV1Client for the given config.
 // NewForConfig is equivalent to NewForConfigAndClient(c, httpClient),
 // where httpClient was generated with rest.HTTPClientFor(c).
-func NewForConfig(c *rest.Config) (*UsagerecordsV1Client, error) {
+func NewForConfig(c *rest.Config) (*SusecloudV1Client, error) {
 	config := *c
 	if err := setConfigDefaults(&config); err != nil {
 		return nil, err
@@ -58,9 +58,9 @@ func NewForConfig(c *rest.Config) (*UsagerecordsV1Client, error) {
 	return NewForConfigAndClient(&config, httpClient)
 }
 
-// NewForConfigAndClient creates a new UsagerecordsV1Client for the given config and http client.
+// NewForConfigAndClient creates a new SusecloudV1Client for the given config and http client.
 // Note the http client provided takes precedence over the configured transport values.
-func NewForConfigAndClient(c *rest.Config, h *http.Client) (*UsagerecordsV1Client, error) {
+func NewForConfigAndClient(c *rest.Config, h *http.Client) (*SusecloudV1Client, error) {
 	config := *c
 	if err := setConfigDefaults(&config); err != nil {
 		return nil, err
@@ -69,12 +69,12 @@ func NewForConfigAndClient(c *rest.Config, h *http.Client) (*UsagerecordsV1Clien
 	if err != nil {
 		return nil, err
 	}
-	return &UsagerecordsV1Client{client}, nil
+	return &SusecloudV1Client{client}, nil
 }
 
-// NewForConfigOrDie creates a new UsagerecordsV1Client for the given config and
+// NewForConfigOrDie creates a new SusecloudV1Client for the given config and
 // panics if there is an error in the config.
-func NewForConfigOrDie(c *rest.Config) *UsagerecordsV1Client {
+func NewForConfigOrDie(c *rest.Config) *SusecloudV1Client {
 	client, err := NewForConfig(c)
 	if err != nil {
 		panic(err)
@@ -82,9 +82,9 @@ func NewForConfigOrDie(c *rest.Config) *UsagerecordsV1Client {
 	return client
 }
 
-// New creates a new UsagerecordsV1Client for the given RESTClient.
-func New(c rest.Interface) *UsagerecordsV1Client {
-	return &UsagerecordsV1Client{c}
+// New creates a new SusecloudV1Client for the given RESTClient.
+func New(c rest.Interface) *SusecloudV1Client {
+	return &SusecloudV1Client{c}
 }
 
 func setConfigDefaults(config *rest.Config) error {
@@ -102,7 +102,7 @@ func setConfigDefaults(config *rest.Config) error {
 
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
-func (c *UsagerecordsV1Client) RESTClient() rest.Interface {
+func (c *SusecloudV1Client) RESTClient() rest.Interface {
 	if c == nil {
 		return nil
 	}

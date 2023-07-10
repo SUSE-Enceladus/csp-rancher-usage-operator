@@ -23,8 +23,8 @@ package fake
 
 import (
 	clientset "github.com/SUSE-Enceladus/csp-rancher-usage-operator/generated/clientset/versioned"
-	usagerecordsv1 "github.com/SUSE-Enceladus/csp-rancher-usage-operator/generated/clientset/versioned/typed/usagerecords/v1"
-	fakeusagerecordsv1 "github.com/SUSE-Enceladus/csp-rancher-usage-operator/generated/clientset/versioned/typed/usagerecords/v1/fake"
+	susecloudv1 "github.com/SUSE-Enceladus/csp-rancher-usage-operator/generated/clientset/versioned/typed/susecloud.net/v1"
+	fakesusecloudv1 "github.com/SUSE-Enceladus/csp-rancher-usage-operator/generated/clientset/versioned/typed/susecloud.net/v1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -82,7 +82,7 @@ var (
 	_ testing.FakeClient  = &Clientset{}
 )
 
-// UsagerecordsV1 retrieves the UsagerecordsV1Client
-func (c *Clientset) UsagerecordsV1() usagerecordsv1.UsagerecordsV1Interface {
-	return &fakeusagerecordsv1.FakeUsagerecordsV1{Fake: &c.Fake}
+// SusecloudV1 retrieves the SusecloudV1Client
+func (c *Clientset) SusecloudV1() susecloudv1.SusecloudV1Interface {
+	return &fakesusecloudv1.FakeSusecloudV1{Fake: &c.Fake}
 }

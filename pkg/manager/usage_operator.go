@@ -21,13 +21,13 @@ type UsageOperator struct {
 }
 
 const (
-	// TODO(gyee): need to make this configurable in helm
-	managerInterval = 30 * time.Second
         cspBillingNoBillThreshold   = "K8S_CSP_BILLING_NO_BILL_THRESHOLD"
+        cspBillingManagerInterval   = "K8S_CSP_BILLING_MANAGER_INTERVAL"
 )
 
 var (
-        noBillThreshold            uint32
+        noBillThreshold  int
+	managerInterval  time.Duration
 )
 
 
@@ -45,15 +45,23 @@ func NewUsageOperator(k k8s.Client, s metrics.Scraper) (*UsageOperator, error) {
 
 func readConstantsFromEnv() error {
         var noBillThresholdStr string = os.Getenv(cspBillingNoBillThreshold)
+        var managerIntervalStr string = os.Getenv(cspBillingManagerInterval)
         var missingEnvVars []string
+	var err error
         if noBillThresholdStr == "" {
                 missingEnvVars = append(missingEnvVars, cspBillingNoBillThreshold)
         } else {
-                noBillThresholdInt, err := strconv.Atoi(noBillThresholdStr)
+		noBillThreshold, err = strconv.Atoi(noBillThresholdStr)
                 if err != nil {
                         missingEnvVars = append(missingEnvVars, cspBillingNoBillThreshold)
-                } else {
-                        noBillThreshold = uint32(noBillThresholdInt)
+                }
+        }
+        if managerIntervalStr == "" {
+                missingEnvVars = append(missingEnvVars, cspBillingManagerInterval)
+        } else {
+		managerInterval, err = time.ParseDuration(managerIntervalStr)
+                if err != nil {
+                        missingEnvVars = append(missingEnvVars, cspBillingManagerInterval)
                 }
         }
 
@@ -77,7 +85,7 @@ func (m *UsageOperator) start(ctx context.Context, errs chan<- error) {
 
                 } else {
                 	logrus.Infof("Node Count %d", ncount)
-			err = m.k8s.UpdateProductUsage(uint32(ncount))
+			err = m.k8s.UpdateProductUsage(ncount)
 			if err != nil {
 				errs <- err
 				logrus.Infof("Failed to update product usage.")
@@ -124,12 +132,16 @@ func (m *UsageOperator) checkAndUpdateUserNotifications() error {
 		cspErrors = cspErrors + "Unable to meter usage. "
         }
         // Notify user if they haven't been billed
-	lastBilledDate, err := time.Parse(time.RFC3339, config.LastBilled)
-	if err != nil {
-                return err
-        }
-	if lastBilledDate.AddDate(0, 0, int(noBillThreshold)).Before(time.Now()) {
-		cspErrors = "It's been more than " + strconv.Itoa(int(noBillThreshold)) + " days since last billed. "
+	// FIXME: if user hasn't been billed, what does the lastBilled date is
+	// expected to be?
+	if config.LastBilled != "" {
+		lastBilledDate, err := time.Parse(time.RFC3339, config.LastBilled)
+		if err != nil {
+                	return err
+        	}
+		if lastBilledDate.AddDate(0, 0, noBillThreshold).Before(time.Now()) {
+			cspErrors = "It's been more than " + strconv.Itoa(noBillThreshold) + " days since last billed. "
+		}
 	}
 	if len(cspErrors) > 0 {
                 if len(config.Errors) > 0 {

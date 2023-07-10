@@ -22,22 +22,22 @@ you may find current contact information at www.suse.com
 package fake
 
 import (
-	v1 "github.com/SUSE-Enceladus/csp-rancher-usage-operator/generated/clientset/versioned/typed/usagerecords/v1"
+	v1 "github.com/SUSE-Enceladus/csp-rancher-usage-operator/generated/clientset/versioned/typed/susecloud.net/v1"
 	rest "k8s.io/client-go/rest"
 	testing "k8s.io/client-go/testing"
 )
 
-type FakeUsagerecordsV1 struct {
+type FakeSusecloudV1 struct {
 	*testing.Fake
 }
 
-func (c *FakeUsagerecordsV1) ProductUsages() v1.ProductUsageInterface {
-	return &FakeProductUsages{c}
+func (c *FakeSusecloudV1) CSPAdapterUsageRecords() v1.CSPAdapterUsageRecordInterface {
+	return &FakeCSPAdapterUsageRecords{c}
 }
 
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
-func (c *FakeUsagerecordsV1) RESTClient() rest.Interface {
+func (c *FakeSusecloudV1) RESTClient() rest.Interface {
 	var ret *rest.RESTClient
 	return ret
 }
