@@ -2,4 +2,3 @@
 // +groupName=susecloud.net
 
 package v1
-

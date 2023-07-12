@@ -37,8 +37,8 @@ type CSPAdapterUsageRecord struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	BaseProduct      string `json:"base_product"`
-        ManagedNodeCount int    `json:"managed_node_count"`
-        ReportingTime    string `json:"reporting_time"`
+	ManagedNodeCount int    `json:"managed_node_count"`
+	ReportingTime    string `json:"reporting_time"`
 }
 
 // CSPAdapterUsageRecordList contains a list of CSPAdapterUsageRecord

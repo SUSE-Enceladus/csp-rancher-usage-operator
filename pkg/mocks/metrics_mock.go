@@ -21,10 +21,9 @@ func (m *MockScraper) ScrapeAndParse() (*metrics.NodeCounts, error) {
 		return &metrics.NodeCounts{
 			Total: m.Nodes,
 		}, nil
-	} else {
-		// Trigger error
-		return &metrics.NodeCounts{
-			Total: m.Nodes,
-		}, errors.New("")
 	}
+	// Trigger error
+	return &metrics.NodeCounts{
+		Total: m.Nodes,
+	}, errors.New("")
 }

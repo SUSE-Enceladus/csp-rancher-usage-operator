@@ -69,7 +69,7 @@ func (s *testScenario) runStartScenario(t *testing.T) {
 		mockUsageOperator, e := NewUsageOperator(mockK8sClient, mockScraper)
 		assert.NoError(t, e)
 
-		nodeCount, e := mockUsageOperator.getNodeCount(context.TODO())
+		nodeCount, e := mockUsageOperator.getNodeCount()
 		assert.Error(t, e, fmt.Sprintf("Scenario: %v", s))
 		assert.Contains(t, e.Error(), "unable to determine number of active nodes")
 		assert.Equal(t, nodeCount, 0) // count is returned as 0 when err != nil
@@ -104,7 +104,7 @@ func (s *testScenario) runStartScenario(t *testing.T) {
 		mockUsageOperator, e := NewUsageOperator(mockK8sClient, mockScraper)
 		assert.NoError(t, e)
 
-		nodeCount, e := mockUsageOperator.getNodeCount(context.TODO())
+		nodeCount, e := mockUsageOperator.getNodeCount()
 		assert.NoError(t, e, fmt.Sprintf("Scenario: %v", s))
 		assert.Equal(t, nodeCount, s.numRancherNodes, "expecting managed nodes to be %d, got %d instead", s.numRancherNodes, nodeCount)
 

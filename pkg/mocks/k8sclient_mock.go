@@ -25,9 +25,8 @@ type Error struct {
 func NewMockK8sClient(Error Error) *MockK8sClient {
 	if Error.Trigger {
 		return &MockK8sClient{Error: Error}
-	} else {
-		return &MockK8sClient{}
 	}
+	return &MockK8sClient{}
 }
 
 func (m *MockK8sClient) UpdateUserNotification(clearError bool, message string) error {
@@ -61,7 +60,7 @@ func (m *MockK8sClient) GetCSPConfigData() (string, error) {
 	var data map[string]interface{}
 	timestamp := time.Now().Format(timeFormat)
 	expire := time.Now().AddDate(0, 1, 0).Format(timeFormat)
-	last_billed := time.Now().AddDate(0, 0, -25).Format(timeFormat)
+	lastBilled := time.Now().AddDate(0, 0, -25).Format(timeFormat)
 
 	// valid data
 	data = map[string]interface{}{
@@ -69,7 +68,7 @@ func (m *MockK8sClient) GetCSPConfigData() (string, error) {
 		"billing_api_access_ok": true,
 		"expire":                expire,
 		"errors":                []string{""},
-		"last_billed":           last_billed,
+		"last_billed":           lastBilled,
 		"usage": map[string]interface{}{
 			"foo": 10,
 		},
@@ -98,11 +97,11 @@ func (m *MockK8sClient) GetCSPConfigData() (string, error) {
 		data["expire"] = time.Now().AddDate(0, 0, -2).Format(timeFormat)
 	}
 	if m.Error.Trigger && m.Error.Condition == "ErrorLastBilledEmpty" {
-		// Errorneous Condition - last_billed empty
+		// Errorneous Condition - lastBilled empty
 		data["last_billed"] = ""
 	}
 	if m.Error.Trigger && m.Error.Condition == "ErrorLastBilledThreshold" {
-		// Errorneous Condition - last_billed beyond threshold
+		// Errorneous Condition - lastBilled beyond threshold
 		data["last_billed"] = time.Now().AddDate(0, 0, -47).Format(timeFormat)
 	}
 	if m.Error.Trigger && m.Error.Condition == "ErrorMarshalUnsupportedType" {
@@ -114,7 +113,7 @@ func (m *MockK8sClient) GetCSPConfigData() (string, error) {
 		data["billing_api_access_ok"] = "STRINGISTEADOFBOOL"
 	}
 	if m.Error.Trigger && m.Error.Condition == "ErrorLastBilledNonRFC3339" {
-		// Errorneous Condition - last_billed in non-RFC3339
+		// Errorneous Condition - lastBilled in non-RFC3339
 		data["last_billed"] = time.Now().AddDate(0, 0, -25).Format(time.Stamp)
 	}
 	// Convert the JSON object to a string
