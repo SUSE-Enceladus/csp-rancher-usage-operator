@@ -21,4 +21,4 @@ sed -i \
     -e 's/tag: latest/tag: '${HELM_TAG}'/' \
     build/charts/rancher-usage-operator/values.yaml
 
-helm package -d ./dist/artifacts ./build/charts/rancher-usage-operator
+helm package -d ./dist/artifacts ./build/charts/csp-rancher-usage-operator/100.0.0+up0.1.0
