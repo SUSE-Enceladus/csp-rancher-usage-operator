@@ -15,7 +15,6 @@ import (
 )
 
 type UsageOperator struct {
-	cancel  context.CancelFunc
 	k8s     k8s.Client
 	scraper metrics.Scraper
 }
@@ -120,7 +119,7 @@ func (m *UsageOperator) checkAndUpdateUserNotifications() error {
 	var message_prefix string = "One or more errors detected by CSP billing. This Rancher instance may not be supported till the problem is resolved. Please resolve the following errors or contact SUSE for further assistance. "
 	var cspErrors string = ""
 	// Notify user if unable to access billing API
-        if config.BillingAPIAccessOK == false {
+        if !config.BillingAPIAccessOK {
 		cspErrors = cspErrors + "Unable to access billing API. "
         }
 	// Notify user if expire date is in the past

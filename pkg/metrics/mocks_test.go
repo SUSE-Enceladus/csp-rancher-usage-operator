@@ -50,11 +50,10 @@ func (m *mockPrometheusServer) ServeHTTP(w http.ResponseWriter, r *http.Request)
 		}
 		requestText := m.getNodeMetricsText()
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(requestText))
+		_, _ = w.Write([]byte(requestText))
 		return
 	}
 	w.WriteHeader(http.StatusNotFound)
-	return
 }
 
 func (m *mockPrometheusServer) getNodeMetricsText() string {
