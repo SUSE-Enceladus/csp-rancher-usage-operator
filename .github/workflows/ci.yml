@@ -15,8 +15,10 @@ jobs:
       - name: Unit Tests
         run: scripts/test
 
-      - name: Go CI Lint
-        run: scripts/validate
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: v1.53
 
       - name: Validate Go
         run: scripts/validate-ci
