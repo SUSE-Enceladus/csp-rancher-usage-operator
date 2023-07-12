@@ -15,6 +15,7 @@ import (
 )
 
 type UsageOperator struct {
+	cancel  context.CancelFunc
 	k8s     k8s.Client
 	scraper metrics.Scraper
 }
