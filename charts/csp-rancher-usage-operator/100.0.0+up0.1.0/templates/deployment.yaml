@@ -14,6 +14,17 @@ spec:
       labels:
         {{- include "csp-rancher-usage-operator.selectorLabels" . | nindent 8 }}
     spec:
+{{- if .Values.additionalTrustedCAs }}
+      initContainers:
+      - name: init-usage-operator
+        image: '{{ .Values.rancherImage }}:{{ .Values.rancherImageTag }}'
+        imagePullPolicy: "{{ .Values.image.imagePullPolicy }}"
+        command: ["/bin/sh"]
+        args: ["-c",'kubectl exec svc/rancher -n cattle-system -- kubectl get secret tls-rancher -n cattle-system -o jsonpath="{.data.tls\\.crt}" | base64 -d > /tlsvol/ca-additional.pem']
+        volumeMounts:
+        - name: tls-ca-volume
+          mountPath: "/tlsvol/"
+{{- end }}       
       containers:
       - env:
         - name: CATTLE_DEBUG
@@ -45,10 +56,8 @@ spec:
       serviceAccountName: {{ include "csp-rancher-usage-operator.serviceAccountName" . }}
 {{- if .Values.additionalTrustedCAs }}
       volumes:
-        - name: tls-ca-volume
-          secret:
-            defaultMode: 0444
-            secretName: tls-ca-additional
+      - name: tls-ca-volume
+        emptyDir: {}
 {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
