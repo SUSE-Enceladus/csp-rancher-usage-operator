@@ -14,6 +14,10 @@ spec:
       labels:
         {{- include "csp-rancher-usage-operator.selectorLabels" . | nindent 8 }}
     spec:
+      {{- with .Values.hostAliases }}
+      hostAliases:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
 {{- if .Values.additionalTrustedCAs }}
       initContainers:
       - name: init-usage-operator
