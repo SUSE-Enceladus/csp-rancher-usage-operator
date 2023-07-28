@@ -47,8 +47,8 @@ var (
 type Client interface {
 	// UpdateUserNotification creates/updates a RancherUserNotification based on isInCompliance and the provided message
 	UpdateUserNotification(clearError bool, message string) error
-	// GetRancherHostname finds the hostname for the core rancher install from the settings.
-	GetRancherHostname() (string, error)
+	// GetRancherMetricsAPIEndpoint finds the Rancher Metrics API endpoint.
+	GetRancherMetricsAPIEndpoint() (string, error)
 	// GetRancherVersion finds the version of rancher from the settings
 	GetRancherVersion() (string, error)
 	// UpdateProductUsage updates the RancherUsageRecord with the current managed node count
@@ -189,15 +189,13 @@ func (c *Clients) UpdateUserNotification(clearError bool, message string) error 
 	return nil
 }
 
-func (c *Clients) GetRancherHostname() (string, error) {
+func (c *Clients) GetRancherMetricsAPIEndpoint() (string, error) {
 	setting := &v3.Setting{}
 	err := c.Settings.Client().Get(context.TODO(), "", hostnameSetting, setting, metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}
-	// server-url includes the protocol prefix - we need the actual hostname to be returned
-	hostname := strings.TrimPrefix(setting.Value, "https://")
-	return hostname, nil
+	return strings.Join([]string{setting.Value, "/metrics"}, ""), nil
 }
 
 func (c *Clients) GetRancherVersion() (string, error) {
