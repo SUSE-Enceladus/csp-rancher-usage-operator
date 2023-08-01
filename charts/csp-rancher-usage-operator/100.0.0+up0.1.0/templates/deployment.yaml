@@ -24,7 +24,7 @@ spec:
         image: '{{ .Values.rancherImage }}:{{ .Values.rancherImageTag }}'
         imagePullPolicy: "{{ .Values.image.imagePullPolicy }}"
         command: ["/bin/sh"]
-        args: ["-c",'kubectl exec svc/rancher -n cattle-system -- kubectl get secret tls-rancher -n cattle-system -o jsonpath="{.data.tls\\.crt}" | base64 -d > /tlsvol/ca-additional.pem']
+        args: ["-c", 'for i in $(seq 1 200); do kubectl exec svc/rancher -n cattle-system -- kubectl get secret tls-rancher -n cattle-system -o jsonpath="{.data.tls\\.crt}" | base64 -d > /tlsvol/ca-additional.pem ; if [[ -f /tlsvol/ca-additional.pem && -s /tlsvol/ca-additional.pem ]]; then exit 0 || sleep 15; fi; done; exit 1']
         volumeMounts:
         - name: tls-ca-volume
           mountPath: "/tlsvol/"

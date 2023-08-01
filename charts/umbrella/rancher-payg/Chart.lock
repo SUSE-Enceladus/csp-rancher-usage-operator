@@ -1,0 +1,15 @@
+dependencies:
+- name: rancher
+  repository: https://releases.rancher.com/server-charts/stable
+  version: 2.7.5
+- name: csp-adapter-crd
+  repository: file://../../csp-adapter-crd/100.0.0+up0.1.0
+  version: 100.0.0+up0.1.0
+- name: csp-rancher-usage-operator
+  repository: file://../../csp-rancher-usage-operator/100.0.0+up0.1.0
+  version: 100.0.0+up0.1.0
+- name: rancher-csp-billing-adapter
+  repository: file://../../rancher-csp-billing-adapter/100.0.0+up0.1.0
+  version: 100.0.0+up0.1.0
+digest: sha256:78dc16200a0bcd2b192df34b20c1248db0c04656e464f8f8876e9bee7d7c52a3
+generated: "2023-08-01T23:31:04.991249509Z"

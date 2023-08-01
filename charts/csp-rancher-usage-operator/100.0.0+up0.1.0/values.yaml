@@ -20,4 +20,4 @@ affinity: {}
 # readme/docs for more details
 additionalTrustedCAs: true
 rancherImage: rancher/rancher
-rancherImageTag: v2.7.3
+rancherImageTag: v2.7.5

@@ -1,0 +1,51 @@
+# The rancher-payg chart is a parent chart that installs
+# all of the other charts of Rancher PAYG offering,
+# but doesn't actually deploy any services itself.
+
+#        
+# Rancher Prime service
+#
+#
+
+# Override any settings for the Rancher prime service here
+rancher:
+        
+  installCRDs: true
+  # The Fully Qualified Domain Name for your Rancher Server
+  hostname: "rancher.my.org"
+  global:
+    cattle:
+      psp:
+        enabled: false
+  # Number of replicas of Rancher pods
+  replicas: 1
+  nameOverride: rancher
+  # set additional environment variables
+  extraEnv:
+    - name: "CATTLE_PROMETHEUS_METRICS"
+      value: "true"
+    - name: "CATTLE_SERVER_URL"
+      value: "https://rancher.my.org"
+
+#
+# csp-adapter-crd
+#
+csp-adapter-crd:
+  fullnameOverride: csp-adapter-crd
+
+#
+# csp-rancher-usage-operator
+#
+
+# Override any settings for the csp-rancher-usage-operator service here  
+csp-rancher-usage-operator:
+  additionalTrustedCAs: true
+  rancherImage: rancher/rancher
+  rancherImageTag: v2.7.5
+  fullnameOverride: csp-rancher-usage-operator  
+
+#
+# rancher-csp-billing-adapter
+#  
+rancher-csp-billing-adapter:
+  fullnameOverride: rancher-csp-billing-adapter  
