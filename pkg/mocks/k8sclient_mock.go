@@ -11,7 +11,7 @@ const timeFormat = time.RFC3339
 type MockK8sClient struct {
 	CurrentManagedNodeCount    int
 	CurrentNotificationMessage string
-	RancherHostName            string
+	RancherMetricsAPIEndpoint  string
 	RancherVersion             string
 
 	Error Error
@@ -36,11 +36,11 @@ func (m *MockK8sClient) UpdateUserNotification(clearError bool, message string) 
 	return nil
 }
 
-func (m *MockK8sClient) GetRancherHostname() (string, error) {
-	if m.Error.Trigger && m.Error.Condition == "ErrorRancherHostname" {
-		return "", errors.New("trigger mock error for GetRancherHostname")
+func (m *MockK8sClient) GetRancherMetricsAPIEndpoint() (string, error) {
+	if m.Error.Trigger && m.Error.Condition == "ErrorRancherMetricsAPIEndpoint" {
+		return "", errors.New("trigger mock error for GetRancherMetricsAPIEndpoint")
 	}
-	return m.RancherHostName, nil
+	return m.RancherMetricsAPIEndpoint, nil
 }
 
 func (m *MockK8sClient) GetRancherVersion() (string, error) {

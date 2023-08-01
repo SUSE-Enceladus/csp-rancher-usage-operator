@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -85,4 +86,46 @@ func (m *mockPrometheusServer) requestAuthorized(req *http.Request) bool {
 
 func (m *mockPrometheusServer) requestAuthenticated(req *http.Request) bool {
 	return req.Header.Get("Authorization") != ""
+}
+
+type MockK8sClient struct {
+	RancherMetricsAPIEndpoint string
+	Error                     Error
+}
+
+type Error struct {
+	Trigger   bool
+	Condition string
+}
+
+func NewMockK8sClient(Error Error) *MockK8sClient {
+	if Error.Trigger {
+		return &MockK8sClient{Error: Error}
+	}
+	return &MockK8sClient{}
+}
+
+func (m *MockK8sClient) GetRancherMetricsAPIEndpoint() (string, error) {
+	if m.Error.Trigger && m.Error.Condition == "ErrorRancherMetricsAPIEndpoint" {
+		return "", errors.New("trigger mock error for GetRancherMetricsAPIEndpoint")
+	}
+	return m.RancherMetricsAPIEndpoint, nil
+}
+
+// NOTE: we don't care about the rest of the interfaces since metrics only uses GetRancherMetricsAPIEndpoint()
+func (m *MockK8sClient) UpdateUserNotification(_ bool, _ string) error {
+	return nil
+}
+
+func (m *MockK8sClient) GetRancherVersion() (string, error) {
+	return "", nil
+}
+
+func (m *MockK8sClient) UpdateProductUsage(_ int) error {
+	//TODO: mock errorneous conditions
+	return nil
+}
+
+func (m *MockK8sClient) GetCSPConfigData() (string, error) {
+	return "", nil
 }

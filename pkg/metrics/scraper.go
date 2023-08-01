@@ -3,8 +3,8 @@ package metrics
 import (
 	"fmt"
 	"net/http"
-	"strings"
 
+	"github.com/SUSE-Enceladus/csp-rancher-usage-operator/pkg/clients/k8s"
 	prometheusClient "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
 	"github.com/sirupsen/logrus"
@@ -17,16 +17,16 @@ type Scraper interface {
 }
 
 type scraper struct {
-	metricsURL string
-	cli        *http.Client
-	cfg        *rest.Config
+	k8s k8s.Client
+	cli *http.Client
+	cfg *rest.Config
 }
 
-func NewScraper(rancherHost string, cfg *rest.Config) Scraper {
+func NewScraper(k k8s.Client, cfg *rest.Config) Scraper {
 	return &scraper{
-		metricsURL: strings.Join([]string{"https://", rancherHost, "/metrics"}, ""),
-		cli:        &http.Client{},
-		cfg:        cfg,
+		k8s: k,
+		cli: &http.Client{},
+		cfg: cfg,
 	}
 }
 
@@ -41,7 +41,11 @@ type NodeCounts struct {
 }
 
 func (s *scraper) ScrapeAndParse() (*NodeCounts, error) {
-	req, err := http.NewRequest(http.MethodGet, s.metricsURL, nil)
+	metricsURL, err := s.k8s.GetRancherMetricsAPIEndpoint()
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest(http.MethodGet, metricsURL, nil)
 	if err != nil {
 		return nil, err
 	}

@@ -114,10 +114,19 @@ func TestScrapeAndParse(t *testing.T) {
 			if test.authed {
 				metricsServer.AddAuthToken(config.BearerToken)
 			}
+
+			merror := Error{
+				Trigger:   false,
+				Condition: "",
+			}
+
+			mockK8sClient := NewMockK8sClient(merror)
+			mockK8sClient.RancherMetricsAPIEndpoint = server.URL + "/metrics"
+
 			metricsScraper := scraper{
-				metricsURL: fmt.Sprintf("%s/metrics", server.URL),
-				cli:        &http.Client{},
-				cfg:        config,
+				k8s: mockK8sClient,
+				cli: &http.Client{},
+				cfg: config,
 			}
 			res, err := metricsScraper.ScrapeAndParse()
 			if test.expectedError {
