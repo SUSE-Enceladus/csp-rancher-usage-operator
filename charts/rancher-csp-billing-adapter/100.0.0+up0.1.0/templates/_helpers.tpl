@@ -57,10 +57,6 @@ Create the name of the service account to use
 {{- default (include "rancher-csp-billing-adapter.fullname" .) .Values.serviceAccount.name }}
 {{- end }}
 
-{{- define "csp-billing-adapter.cspBillingAdapterNamespace" -}}
-cattle-csp-billing-adapter-system
-{{- end }}
-
 # Name of the configmap that has the CSP configuration information
 {{- define "csp-billing-adapter.cspBillingAdapterConfigMap" -}}
 csp-config

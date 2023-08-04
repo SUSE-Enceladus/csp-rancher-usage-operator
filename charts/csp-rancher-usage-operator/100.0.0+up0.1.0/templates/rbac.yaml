@@ -96,13 +96,12 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: {{ include "csp-rancher-usage-operator.serviceAccountName" . }}
-    namespace: cattle-csp-billing-adapter-system
+    namespace: {{ .Release.Namespace }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: {{ .Chart.Name }}-configmap-reader-role
-  namespace: {{ template "csp-usage-operator.cspBillingAdapterNamespace" }}
 rules:
 - apiGroups:
   - ""
@@ -117,7 +116,6 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: {{ .Chart.Name }}-binding
-  namespace: {{ template "csp-usage-operator.cspBillingAdapterNamespace" }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -125,4 +123,4 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: {{ include "csp-rancher-usage-operator.serviceAccountName" . }}
-    namespace: cattle-csp-billing-adapter-system
+    namespace: {{ .Release.Namespace }}

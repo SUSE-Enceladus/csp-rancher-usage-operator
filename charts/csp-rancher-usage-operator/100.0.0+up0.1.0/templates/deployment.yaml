@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "csp-rancher-usage-operator.fullname" . }}
-  namespace: cattle-csp-billing-adapter-system
   labels:
     {{- include "csp-rancher-usage-operator.labels" . | nindent 4 }}
 spec:
@@ -34,7 +33,7 @@ spec:
         - name: CATTLE_DEBUG
           value: {{ .Values.debug | quote }}
         - name: K8S_CSP_BILLING_ADAPTER_NAMESPACE
-          value: '{{ include "csp-usage-operator.cspBillingAdapterNamespace" . }}'
+          value: {{ .Release.Namespace | quote }}
         - name: K8S_CSP_BILLING_ADAPTER_CONFIGMAP
           value: '{{ include "csp-usage-operator.cspBillingAdapterConfigMap" . }}'
         - name: K8S_CSP_BILLING_NO_BILL_THRESHOLD
