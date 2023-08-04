@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "rancher-csp-billing-adapter.fullname" . }}-post-delete
+  labels:
+    {{- include "rancher-csp-billing-adapter.labels" . | nindent 4 }}
+  annotations:
+    meta.helm.sh/release-name: {{ include "rancher-csp-billing-adapter.fullname" . }}
+    meta.helm.sh/release-namespace: {{ .Release.Namespace }}
+    "helm.sh/hook": post-delete
+    "helm.sh/hook-weight": "4"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded,hook-failed
+data:
+  post-delete-hook.sh: |-
+{{ $.Files.Get "scripts/post-delete-hook.sh" | indent 4 }}

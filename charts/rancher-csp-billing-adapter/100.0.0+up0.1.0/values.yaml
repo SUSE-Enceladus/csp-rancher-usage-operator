@@ -14,3 +14,31 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+fullnameOverride: rancher-csp-billing-adapter
+
+# Override any settings for the Rancher prime service here
+rancher:
+
+  installCRDs: true
+  # The Fully Qualified Domain Name for your Rancher Server
+  hostname: "rancher.my.org"
+  global:
+    cattle:
+      psp:
+        enabled: false
+  # Number of replicas of Rancher pods
+  replicas: 1
+  namespace: cattle-system
+  timeout: 120
+  # by default, the job will fail if it fail to uninstall any of the apps
+  ignoreTimeoutError: false
+
+csp-adapter-crd:
+  fullnameOverride: csp-adapter-crd
+
+# Override any settings for the csp-rancher-usage-operator service here
+csp-rancher-usage-operator:
+  additionalTrustedCAs: true
+  rancherImage: rancher/rancher
+  rancherImageTag: v2.7.5
+  fullnameOverride: csp-rancher-usage-operator
