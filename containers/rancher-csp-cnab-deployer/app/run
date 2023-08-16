@@ -1,0 +1,82 @@
+#!/bin/sh
+set -xe
+
+action=${CNAB_ACTION:-install}
+name=${CNAB_INSTALLATION_NAME:-rancher-csp-cnab-deployer}
+rancher_hostname=${RANCHER_HOSTNAME:-csp-billing}
+rancher_server_url=${RANCHER_SERVER_URL:-https://csp-billing}
+rancher_replicas=${RANCHER_REPLICAS:-1}
+rancher_bootstrap_password=${RANCHER_BOOTSTRAP_PASSWORD:-rancher}
+
+helm_timeout=20m
+
+rancher_image_arguments=
+if [[ ! -z "${RANCHER_IMAGE}" ]]
+then
+	rancher_image_arguments="--set rancherImage=${RANCHER_IMAGE}"
+fi
+if [[ ! -z "${RANCHER_IMAGE_DIGEST}" ]]
+then
+        rancher_image_arguments="${rancher_image_arguments} --set rancherImageDigest=${RANCHER_IMAGE_DIGEST}"
+fi
+
+rancher_usage_operator_image_arguments=
+if [[ ! -z "${RANCHER_USAGE_OPERATOR_IMAGE}" ]]
+then
+        rancher_usage_operator_image_arguments="--set rancherUsageOperatorImage=${RANCHER_USAGE_OPERATOR_IMAGE}"
+fi
+if [[ ! -z "${RANCHER_USAGE_OPERATOR_IMAGE_DIGEST}" ]]
+then
+        rancher_usage_operator_image_arguments="${rancher_usage_operator_image_arguments} --set rancherUsageOperatorImageDigest=${RANCHER_USAGE_OPERATOR_IMAGE_DIGEST}"
+fi
+
+rancher_billing_adapter_image_arguments=
+if [[ ! -z "${RANCHER_BILLING_ADAPTER_IMAGE}" ]]
+then
+        rancher_billing_adapter_image_arguments="--set rancherBillingAdapterImage=${RANCHER_BILLING_ADAPTER_IMAGE}"
+fi
+if [[ ! -z "${RANCHER_BILLING_ADAPTER_IMAGE_DIGEST}" ]]
+then
+        rancher_billing_adapter_image_arguments="${rancher_billing_adapter_image_arguments} --set rancherBillingAdapterImageDigest=${RANCHER_BILLING_ADAPTER_IMAGE_DIGEST}"
+fi
+
+case $action in
+    install)
+        echo "Installing Rancher"
+	helm install rancher /cnab/app/charts/rancher/2.7.5 --atomic --create-namespace --namespace cattle-system --set installCRDs=true ${rancher_image_arguments} --set hostname=${rancher_hostname} --set bootstrapPassword=${rancher_bootstrap_password} --set replicas=${rancher_replicas} --set extraEnv[0].name=CATTLE_SERVER_URL --set extraEnv[0].value=${rancher_server_url} --set extraEnv[1].name=CATTLE_PROMETHEUS_METRICS --set-string extraEnv[1].value=true --timeout ${helm_timeout}
+        echo "Rancher successfully installed"
+        echo "Installing CSP Rancher Usage Operator CRD"
+        helm install csp-adapter-crd /cnab/app/charts/csp-adapter-crd/100.0.0+up0.1.0 --namespace cattle-csp-billing-adapter-system --create-namespace --atomic --timeout ${helm_timeout}
+        echo "CSP Rancher Usage Operator CRD successfully installed"
+        echo "Installing CSP Rancher Usage Operator"
+        helm install csp-rancher-usage-operator /cnab/app/charts/csp-rancher-usage-operator/100.0.0+up0.1.0 ${rancher_usage_operator_image_arguments} --namespace cattle-csp-billing-adapter-system --create-namespace --atomic --timeout ${helm_timeout}
+        echo "CSP Rancher Usage Operator successfully installed"
+        echo "Installing Rancher CSP Billing Adapter"
+        helm install rancher-csp-billing-adapter /cnab/app/charts/rancher-csp-billing-adapter/100.0.0+up0.1.0 ${rancher_billing_adapter_image_arguments} --namespace cattle-csp-billing-adapter-system --create-namespace --atomic --timeout ${helm_timeout}
+        echo "Rancher CSP Billing successfully installed"
+        ;;
+    uninstall)
+        echo "Uninstalling Rancher CSP Billing Adapter"
+        helm uninstall rancher-csp-billing-adapter -n cattle-csp-billing-adapter-system
+        echo "Rancher CSP Billing Adapter successfully uninstalled"
+        echo "Uninstalling CSP Rancher Usage Operator"
+        helm uninstall csp-rancher-usage-operator -n cattle-csp-billing-adapter-system
+        echo "CSP Rancher Usage Operator successfully uninstalled"
+        echo "Uninstalling CSP Rancher Usage Operator CRD"
+        helm uninstall csp-adapter-crd -n cattle-csp-billing-adapter-system
+        echo "CSP Rancher Usage Operator CRD successfully uninstalled"
+        echo "Uninstalling Rancher"
+        helm uninstall rancher -n cattle-system
+        echo "Rancher successfully uninstalled"
+        ;;
+    upgrade)
+        echo "Upgrade action"
+        ;;
+    status)
+        echo "Status action"
+        ;;
+    *)
+    echo "No action for $action"
+    ;;
+esac
+echo "Action $action complete for $name"

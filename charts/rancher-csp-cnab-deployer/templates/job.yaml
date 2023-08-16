@@ -1,0 +1,64 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ template "rancher-csp-cnab-deployer.fullname" . }}
+  labels:
+    {{- include "rancher-csp-cnab-deployer.labels" . | nindent 4 }}
+spec:
+  completions: 1
+  parallelism: 1
+  backoffLimit: 0
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "rancher-csp-cnab-deployer.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ template "rancher-csp-cnab-deployer.fullname" . }}
+      restartPolicy: Never
+      containers:
+        - name: {{ template "rancher-csp-cnab-deployer.name" . }}
+          image: {{ template "rancher-csp-cnab-deployer.image" . }}
+          imagePullPolicy: "{{ .Values.image.imagePullPolicy }}"
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          command:
+            - /cnab/app/run
+          env:
+            - name: CNAB_ACTION
+              value: "install"
+{{- if and (.Values.global) (.Values.global.azure) (.Values.global.azure.images) }}
+            - name: RANCHER_IMAGE
+              value: "{{ .Values.global.azure.images.rancher.registry }}/{{ .Values.global.azure.images.rancher.image }}"
+            - name: RANCHER_IMAGE_DIGEST
+              value: {{ .Values.global.azure.images.rancher.digest | quote }}
+            - name: RANCHER_USAGE_OPERATOR_IMAGE
+              value: "{{ .Values.global.azure.images.csp_rancher_usage_operator.registry }}/{{ .Values.global.azure.images.csp_rancher_usage_operator.image }}"
+            - name: RANCHER_USAGE_OPERATOR_IMAGE_DIGEST
+              value: {{ .Values.global.azure.images.csp_rancher_usage_operator.digest | quote }}
+            - name: RANCHER_BILLING_ADAPTER_IMAGE
+              value: "{{ .Values.global.azure.images.rancher_csp_billing_adapter.registry }}/{{ .Values.global.azure.images.rancher_csp_billing_adapter.image }}"
+            - name: RANCHER_BILLING_ADAPTER_IMAGE_DIGEST
+              value: {{ .Values.global.azure.images.rancher_csp_billing_adapter.digest | quote }}
+{{- end }}
+{{- if .Values.rancherHostname }}
+            - name: RANCHER_HOSTNAME
+              value: {{ .Values.rancherHostname | quote }}
+{{- end }}
+{{- if .Values.rancherServerURL }}
+            - name: RANCHER_SERVER_URL
+              value: {{ .Values.rancherServerURL | quote }}
+{{- end }}
+{{- if .Values.rancherReplicas }}
+            - name: RANCHER_REPLICAS
+              value: {{ .Values.rancherReplicas | quote }}
+{{- end }}
+{{- if .Values.rancherBootstrapPassword }}
+            - name: RANCHER_BOOTSTRAP_PASSWORD
+              value: {{ .Values.rancherBootstrapPassword | quote }}
+{{- end }}

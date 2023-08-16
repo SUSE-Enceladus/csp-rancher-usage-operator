@@ -2,10 +2,10 @@ debug: true
 # used for development only - not supported in production
 devMode: true
 
-image:
-  repository: yeey/csp-rancher-usage-operator
-  tag: latest
-  imagePullPolicy: Always
+rancherUsageOperatorImage: yeey/csp-rancher-usage-operator
+rancherUsageOperatorImageTag: latest
+#rancherUsageOperatorImageDigest: sha256:...
+#rancherUsageOperatorImagePullPolicy: Always
 
 serviceAccount:
   annotations: []

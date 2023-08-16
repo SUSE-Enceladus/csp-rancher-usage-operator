@@ -25,9 +25,13 @@ spec:
           value: '{{ include "csp-billing-adapter.usageAPIVersion" . }}'
         - name: USAGE_API_GROUP
           value: '{{ include "csp-billing-adapter.usageAPIGroup" . }}'
-        image: '{{ .Values.image.repository }}:{{ .Values.image.tag }}'
+{{- if .Values.rancherBillingAdapterImageDigest }}
+        image: {{ .Values.rancherBillingAdapterImage }}@{{ .Values.rancherBillingAdapterImageDigest }}
+{{- else }}
+        image: {{ .Values.rancherBillingAdapterImage }}:{{ default .Chart.AppVersion .Values.rancherBillingAdapterImageTag }}
+{{- end }}
+        imagePullPolicy: {{ default "IfNotPresent" .Values.rancherBillingAdapterImagePullPolicy }}
         name: {{ .Chart.Name }}
-        imagePullPolicy: "{{ .Values.image.imagePullPolicy }}"
       serviceAccountName: {{ include "rancher-csp-billing-adapter.serviceAccountName" . }}
       {{- with .Values.nodeSelector }}
       nodeSelector:

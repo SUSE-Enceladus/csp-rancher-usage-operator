@@ -1,0 +1,57 @@
+rancherHostname: csp-billing
+rancherServerURL: https://csp-billing
+rancherReplicas: 1
+rancherBootstrapPassword: Ranch99
+
+global:
+  azure:
+    identity:
+      # Application's Managed Service Identity (MSI) Client ID. ClientID can be used to generate authentication token to communicate to external services like Microsoft Marketplace Metering API
+      clientId: "DONOTMODIFY" # Azure populates this value at deployment time
+    marketplace:
+      # id of the plan purchased for the Azure Marketplace Kubernetes application,to be used in usage event payload to metering api, for more information please refer: https://learn.microsoft.com/en-us/partner-center/marketplace/marketplace-metering-service-apis
+      planId: "DONOTMODIFY" # Azure populates this value at deployment time
+    extension:
+      # resource id of the Azure Marketplace Kubernetes application,to be used in usage event payload to metering api, for more information please refer: https://learn.microsoft.com/en-us/partner-center/marketplace/marketplace-metering-service-apis
+      resourceId: "DONOTMODIFY" # application's Azure Resource ID, Azure populates this value at deployment time
+    images:
+      rancher:
+        registry: rancher
+        image: rancher
+        digest: sha256:4890d2d938aff67b4ea49253ec566be6aa9e8e600c28e96b4d5d4a6f1a7294e4
+      rancher_csp_cnab_deployer:
+        registry: yeey
+        image: rancher-csp-cnab-deployer
+        digest: sha256:439d687ff59e7bad13ab9e732165122e404a1d5e511b4980a2d990fc878b9f7a
+      csp_rancher_usage_operator:
+        registry: yeey
+        image: csp-rancher-usage-operator
+        digest: sha256:2b56cf7c13f8edf49682d5f3cc17ef5b7cb907277777dbef534f2a039e85c332
+      rancher_csp_billing_adapter:
+        registry: registry.opensuse.org/home/yeey/rancher-csp-billing-adapter/containers
+        image: rancher-local-billing-container
+        digest: sha256:688f5eb13bfdf2abd0d21c3f24403625369e735751ec9b0d34cc9e84fa9e38dc
+
+image:
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+securityContext:
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  runAsUser: 0

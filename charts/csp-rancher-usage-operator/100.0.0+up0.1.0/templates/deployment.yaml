@@ -20,8 +20,12 @@ spec:
 {{- if .Values.additionalTrustedCAs }}
       initContainers:
       - name: init-usage-operator
-        image: '{{ .Values.rancherImage }}:{{ .Values.rancherImageTag }}'
-        imagePullPolicy: "{{ .Values.image.imagePullPolicy }}"
+{{- if .Values.rancherImageDigest }}
+        image: {{ .Values.rancherImage }}@{{ .Values.rancherImageDigest }}
+{{- else }}
+        image: {{ .Values.rancherImage }}:{{ default .Chart.AppVersion .Values.rancherImageTag }}
+{{- end }}
+        imagePullPolicy: {{ default "IfNotPresent" .Values.rancherImagePullPolicy }}
         command: ["/bin/sh"]
         args: ["-c",'kubectl exec svc/rancher -n cattle-system -- kubectl get secret tls-rancher -n cattle-system -o jsonpath="{.data.tls\\.crt}" | base64 -d > /tlsvol/ca-additional.pem']
         volumeMounts:
@@ -46,9 +50,13 @@ spec:
           value: '{{ include "csp-usage-operator.hostnameSetting"  . }}'
         - name: K8S_RANCHER_VERSION_SETTING
           value: '{{ include "csp-usage-operator.versionSetting"  . }}'
-        image: '{{ .Values.image.repository }}:{{ .Values.image.tag }}'
+{{- if .Values.rancherUsageOperatorImageDigest }}
+        image: {{ .Values.rancherUsageOperatorImage }}@{{ .Values.rancherUsageOperatorImageDigest }}
+{{- else }}
+        image: {{ .Values.rancherUsageOperatorImage }}:{{ default .Chart.AppVersion .Values.rancherUsageOperatorImageTag }}
+{{- end }}
+        imagePullPolicy: {{ default "IfNotPresent" .Values.rancherUsageOperatorImagePullPolicy }}
         name: {{ .Chart.Name }}
-        imagePullPolicy: "{{ .Values.image.imagePullPolicy }}"
 {{- if .Values.additionalTrustedCAs }}
         volumeMounts:
           - mountPath: /etc/ssl/certs/rancher-cert.pem

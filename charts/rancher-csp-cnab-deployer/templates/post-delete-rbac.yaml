@@ -1,0 +1,33 @@
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ template "rancher-csp-cnab-deployer.fullname" . }}-post-delete
+  labels:
+    {{- include "rancher-csp-cnab-deployer.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-delete
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded,hook-failed
+rules:
+  - apiGroups: [ "*" ]
+    resources: [ "*" ]
+    verbs: [ "*" ]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ template "rancher-csp-cnab-deployer.fullname" . }}-post-delete
+  labels:
+    {{- include "rancher-csp-cnab-deployer.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-delete
+    "helm.sh/hook-weight": "2"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded,hook-failed
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ template "rancher-csp-cnab-deployer.fullname" . }}-post-delete
+subjects:
+  - kind: ServiceAccount
+    name: {{ template "rancher-csp-cnab-deployer.fullname" . }}-post-delete
+    namespace: {{ .Release.Namespace }}

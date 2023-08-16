@@ -9,4 +9,4 @@
 *.swp
 .idea
 .envrc
-
+containers/rancher-csp-cnab-deployer/app/charts/*

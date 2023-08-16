@@ -1,7 +1,7 @@
-image:
-  repository: registry.opensuse.org/home/yeey/rancher-csp-billing-adapter/containers/rancher-local-billing-container
-  tag: latest
-  imagePullPolicy: Always
+rancherBillingAdapterImage: registry.opensuse.org/home/yeey/rancher-csp-billing-adapter/containers/rancher-local-billing-container
+rancherBillingAdapterImageTag: latest
+#rancherBillingAdapterImageDigest: sha256:...
+#rancherBillingAdapterImagePullPolicy: Always
 
 imagePullSecrets: []
 
