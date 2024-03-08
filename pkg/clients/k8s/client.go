@@ -208,14 +208,14 @@ func (c *Clients) GetRancherVersion() (string, error) {
 }
 
 func (c *Clients) UpdateProductUsage(managedNodes int) error {
-	currentUsage, err := c.UsageRecord.Get(context.TODO(), "rancher-usage-record", metav1.GetOptions{})
 	reportingTime := time.Now().Format(time.RFC3339)
+	rancherVersion, err := c.GetRancherVersion()
+	if err != nil {
+		return fmt.Errorf("error looking up Rancher version %w", err)
+	}
+	currentUsage, err := c.UsageRecord.Get(context.TODO(), "rancher-usage-record", metav1.GetOptions{})
 	if err != nil {
 		if apierror.IsNotFound(err) {
-			rancherVersion, err := c.GetRancherVersion()
-			if err != nil {
-				return fmt.Errorf("error looking up Rancher version %w", err)
-			}
 			_, err = c.UsageRecord.Create(context.TODO(), &susecloudnetv1.CSPAdapterUsageRecord{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "rancher-usage-record",
@@ -234,6 +234,7 @@ func (c *Clients) UpdateProductUsage(managedNodes int) error {
 	}
 	currentUsage = currentUsage.DeepCopy()
 	currentUsage.ManagedNodeCount = managedNodes
+	currentUsage.BaseProduct = baseProductPrefix + rancherVersion
 	currentUsage.ReportingTime = reportingTime
 	_, err = c.UsageRecord.Update(context.TODO(), currentUsage, metav1.UpdateOptions{})
 	if err != nil {
