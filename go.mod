@@ -1,6 +1,6 @@
 module github.com/SUSE-Enceladus/csp-rancher-usage-operator
 
-go 1.19
+go 1.22
 
 replace (
 	github.com/rancher/rancher/pkg/apis => github.com/rancher/rancher/pkg/apis v0.0.0-20220519154712-0e2fdc8060bc
