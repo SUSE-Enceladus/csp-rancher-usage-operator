@@ -11,11 +11,9 @@
 		]
 	},
 	"run": {
-		"skip-files": [
-			"/zz_generated_"
-		],
 		"deadline": "5m"
 	},
+        "exclude-files": ["/zz_generated_"],
 	"issues": {
 		"exclude-rules": [
 			{
